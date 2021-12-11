@@ -1,13 +1,18 @@
-import java.awt.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 
 public class Application {
-    public ArrayList<Book> books;
-    public ArrayList<Book> customers;
-    public ArrayList<Book> owners;
+    private ArrayList<Book> books;
+    private ArrayList<Book> customers;
+    private ArrayList<Book> owners;
+    private Connection connection;
 
-    public Application() {
-        books = new ArrayList<Book>();
+    public Application(Connection connection) {
+        this.books = new ArrayList<Book>();
+        this.connection = connection;
 
     }
 
@@ -15,5 +20,21 @@ public class Application {
         // books.add(new Book(""))
 
     }
+
+    public void run() {
+        try {
+            PreparedStatement statement = connection.prepareStatement("select * from book;");
+            ResultSet result = statement.executeQuery();
+            if (result.next()) {
+                do {
+                    System.out.println(result.getString("name"));
+                } while (result.next());
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+    }
+
     
 }

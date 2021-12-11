@@ -1,6 +1,5 @@
 drop table OrderBook;
 drop table CustomerOrder;
-drop table Publish;
 drop table Collect;
 drop table Author;
 drop table TheOrder;
@@ -9,41 +8,34 @@ drop table Publisher;
 drop table Owner;
 drop table Customer;
 
+create table Publisher(
+    publisher_id    serial,
+    email           varchar(50),
+    bank_account    varchar(50),
+    balance         real,
+    address         varchar(50),
+    phone_number    varchar(20),
+    primary key (publisher_id)
+);
+
 create table Book (
     ISBN            integer,
+    publisher_id    integer,
     name            varchar(50),
     genre           varchar(50),
     description     varchar(50),    
     num_of_pages    integer,    
     price           real,
-    primary key (ISBN)
+    primary key (ISBN),
+    foreign key (publisher_id) references Publisher(publisher_id)
 );
 
 create table Author(
-    author_id   serial,
+    author_id   integer,
     ISBN        integer,
     name        varchar(50),
     primary key (author_id, ISBN),
     foreign key (ISBN) references Book(ISBN)
-        on delete cascade
-);
-
-create table Publisher(
-    publisher_id    serial,
-    email           varchar(50),
-    bank_account    varchar(50),
-    address         varchar(50),
-    phone_number    bigint,
-    primary key (publisher_id)
-);
-
-create table Publish(
-    publisher_id    integer,
-    ISBN            integer,
-    primary key (publisher_id, ISBN),
-    foreign key (ISBN) references Book(ISBN)
-        on delete cascade,
-    foreign key (publisher_id) references Publisher(publisher_id)
         on delete cascade
 );
 
@@ -75,11 +67,12 @@ create table Customer(
     primary key (customer_id)
 );
 
+-- PSQL doesn't accept "Order" as the table name :)
 create table TheOrder(
     order_id            serial,
     billing_address     varchar(50),
     shipping_address    varchar(50),
-    status              int,
+    status              varchar(50),
     ordered_date        date,
     estimated_arrival   date,
     location            varchar(50),
@@ -87,8 +80,9 @@ create table TheOrder(
 );
 
 create table OrderBook(
-    ISBN        int,
-    order_id    int,
+    ISBN            int,
+    order_id        int,
+    unit_ordered    int,
     primary key (ISBN, order_id),
     foreign key (ISBN) references Book(ISBN)
         on delete cascade,
@@ -105,3 +99,5 @@ create table CustomerOrder(
     foreign key (customer_id) references Customer(customer_id)
         on delete cascade
 );
+
+-- Triggers
