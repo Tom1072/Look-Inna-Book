@@ -8,9 +8,11 @@ public class Application {
     private Connection connection;
     private View view;
     private Basket basket;
+    Customer customer;
 
     public Application(Connection connection) {
         this.connection = connection;
+        this.customer = null;
         view = new View();
         basket = new Basket();
     }
@@ -33,7 +35,7 @@ public class Application {
                     ownerControl();
                     break;
                 case EXIT:
-                    view.print("Bye byeee!\n");
+                    mainExit();
                     break;
                 default:
                     view.print("Unknown option\n");
@@ -41,12 +43,16 @@ public class Application {
         } while (output != EXIT);
     }
 
+    private void mainExit() {
+        view.print("Bye byeee!\n");
+    }
+
+
     private void customerControl() {
         // Common
         final int BROWSE_BOOK    = 1;
         final int ADD_BOOK       = 2;
         final int REMOVE_BOOK    = 3;
-        final int EDIT_BASKET    = 4;
         final int SHOW_BASKET    = 5;
         final int EXIT           = 0;
 
@@ -57,28 +63,17 @@ public class Application {
         final int CHECKOUT       = 8;
         final int LOG_OUT        = 9;
 
-        boolean loggedIn = false;
-        Customer customer = null;
-
         int option = 0;
 
         do {
-            if (!loggedIn) {
+            if (customer == null) {
                 // Not logged-in specific
                 view.showCustomerScreenNotLoggedIn();
                 option = view.getInt();
-            
+
                 switch (option) {
                     case LOG_IN:
-                        view.print("Enter the name of the customer to log in:\n");
-                        String name = view.getString();
-                        customer = customerLogin(name);
-                        if (customer != null) {
-                            loggedIn = true;
-                            view.print("Logged in successfully!\n");
-                        } else {
-                            view.print("Logged in unsuccessful!\n");
-                        }
+                        customerLogin();
                         break;
                     default:
                         break;
@@ -90,71 +85,30 @@ public class Application {
 
                 switch (option) {
                     case LOG_OUT:
-                        customer = null;
-                        loggedIn = false;
-                        view.print("Logged out unsuccessful!\n");
+                        customerLogout();
                         break;
+                    case CHECKOUT:
+                        customerCheckOut();
                     default:
                         break;
                 }
-
             }
+
             switch (option) {
                 case BROWSE_BOOK:
-                    ArrayList<Book> books = browseBook();
-                    view.customerBrowseBook(books);
+                    customerBrowseBook();
                     break;
                 case ADD_BOOK:
-                {
-                    Book book = null;
-                    int numOfBooks = -1;
-                    do {
-                        view.print("What is the ISBN of the book that you want to order?\n");
-                        int ISBN = view.getInt();
-                        book = getBook(ISBN);
-                        if (book == null) {
-                            view.print("Unknown Book\n");
-                        }
-                    } while (book == null);
-
-                    do {
-                        view.print("How many do you want to order? (0 if you change your mind)\n");
-                        numOfBooks = view.getInt();
-                        basket.add(book, numOfBooks);
-                    } while (numOfBooks < 0);
+                    customerAddBook();
                     break;
-                }
                 case REMOVE_BOOK:
-                {
-                    int ISBN = -1;
-                    int numOfBooks = -1;
-                    boolean bookExists = false;
-
-                    do {
-                        view.print("What is the ISBN of the book that you want to remove?\n");
-                        ISBN = view.getInt();
-                        bookExists = basket.exists(ISBN);
-                        if (!bookExists) {
-                            view.print("Book not in basket\n");
-                        }
-                    } while (!bookExists);
-
-                    do {
-                        view.print("How many do you want to remove? (0 if you change your mind)\n");
-                        numOfBooks = view.getInt();
-                        if (numOfBooks < 0) {
-                            view.print("Please enter a positive value\n");
-                        }
-                        basket.remove(ISBN, numOfBooks);
-                    } while (numOfBooks < 0);
+                    customerRemoveBook();
                     break;
-                    
-                }
                 case SHOW_BASKET:
-                    view.customerShowBasket(basket);
+                    customerShowBasket();
                     break;
                 case EXIT:
-                    view.print("Back to Main View\n");
+                    customerExit();
                     break;
                 default:
                     view.print("Unknown option\n");
@@ -162,8 +116,89 @@ public class Application {
             }
         } while (option != EXIT);
     }
+    private void customerLogin() {
+        view.print("Enter the name of the customer to log in:\n");
+        String name = view.getString();
+        customer = getCustomer(name);
+        if (customer != null) {
+            view.print("Logged in successfully!\n");
+        } else {
+            view.print("Logged in unsuccessful!\n");
+        }
+    }
 
-    private ArrayList<Book> browseBook() {
+    private void customerLogout() {
+        customer = null;
+        view.print("Logged out unsuccessful!\n");
+
+    }
+
+    private void customerCheckOut() {
+
+
+    }
+
+    private void customerAddBook() {
+        Book book = null;
+        int numOfBooks = -1;
+        do {
+            view.print("What is the ISBN of the book that you want to order?\n");
+            int ISBN = view.getInt();
+            book = getBook(ISBN);
+            if (book == null) {
+                view.print("Unknown Book\n");
+            }
+        } while (book == null);
+
+        do {
+            view.print("How many do you want to order? (0 if you change your mind)\n");
+            numOfBooks = view.getInt();
+            basket.add(book, numOfBooks);
+        } while (numOfBooks < 0);
+    }
+
+    private void customerRemoveBook() {
+        int ISBN = -1;
+        int numOfBooks = -1;
+        boolean bookExists = false;
+
+        do {
+            view.print("What is the ISBN of the book that you want to remove?\n");
+            ISBN = view.getInt();
+            bookExists = basket.exists(ISBN);
+            if (!bookExists) {
+                view.print("Book not in basket\n");
+            }
+        } while (!bookExists);
+
+        do {
+            view.print("How many do you want to remove? (0 if you change your mind)\n");
+            numOfBooks = view.getInt();
+            if (numOfBooks < 0) {
+                view.print("Please enter a positive value\n");
+            }
+            basket.remove(ISBN, numOfBooks);
+        } while (numOfBooks < 0);
+
+    }
+
+    private void customerBrowseBook() {
+        ArrayList<Book> books = getBooks();
+        view.customerBrowseBook(books);
+    }
+
+    private void customerShowBasket() {
+        view.customerShowBasket(basket);
+    }
+
+    private void customerExit() {
+        view.print("Back to Main View\n");
+    }
+
+    private void ownerControl() {
+
+    }
+    private ArrayList<Book> getBooks() {
         ArrayList<Book> books = new ArrayList<>();
         try {
             PreparedStatement statement = connection.prepareStatement("select * from Book;");
@@ -198,7 +233,7 @@ public class Application {
         return books;
     }
 
-    private Customer customerLogin(String name) {
+    private Customer getCustomer(String name) {
         Customer customer = null;
         
         try {
@@ -249,7 +284,4 @@ public class Application {
         return book;
     }
 
-    private void ownerControl() {
-
-    }
 }
