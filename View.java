@@ -36,7 +36,6 @@ public class View {
         s += String.format("(1) Browse book\n");
         s += String.format("(2) Add book to basket\n");
         s += String.format("(3) Remove book from basket\n");
-        s += String.format("(4) Edit basket\n");
         s += String.format("(5) Show basket\n");
         s += String.format("(8) Checkout\n");
         s += String.format("(9) Log out\n");
@@ -56,7 +55,6 @@ public class View {
         s += String.format("(1) Browse book\n");
         s += String.format("(2) Add book to basket\n");
         s += String.format("(3) Remove book from basket\n");
-        s += String.format("(4) Edit basket\n");
         s += String.format("(5) Show basket\n");
         s += String.format("(9) Log in\n");
         s += String.format("(0) Exit Customer View\n");
