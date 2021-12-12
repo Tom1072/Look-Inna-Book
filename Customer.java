@@ -1,12 +1,23 @@
+import java.util.ArrayList;
+
 public class Customer {
-    public int customer_id;
     public String name;
     public String billing_address;
     public String shipping_address;
-    public Customer(int customer_id, String name, String billing_address, String shipping_address) {
-        this.customer_id = customer_id;
-        this.name = name;
-        this.billing_address = billing_address ;
-        this.shipping_address = shipping_address ;
+    public ArrayList<Order> orders;
+
+    public Customer() {
+        this.name = "";
+        this.billing_address = "";
+        this.shipping_address = "";
+        orders = new ArrayList<>();
+    }
+
+    public String toString() {
+        String s = "";
+        s += String.format("name: %s\n", this.name);
+        s += String.format("billing address: %s\n", this.billing_address);
+        s += String.format("shipping address: %s\n", this.shipping_address);
+        return s;
     }
 }
