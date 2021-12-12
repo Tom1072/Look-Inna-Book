@@ -71,11 +71,8 @@ public class View {
         }
     }
 
-    public void customerShowBasket(ArrayList<BookOrder> basket) {
-        for (BookOrder bookOrder:basket) {
-            System.out.println(bookOrder);
-        }
-
+    public void customerShowBasket(Basket basket) {
+        System.out.println(basket);
     }
 
 

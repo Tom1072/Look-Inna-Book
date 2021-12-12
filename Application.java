@@ -7,12 +7,12 @@ import java.util.ArrayList;
 public class Application {
     private Connection connection;
     private View view;
-    private ArrayList<BookOrder> basket;
+    private Basket basket;
 
     public Application(Connection connection) {
         this.connection = connection;
         view = new View();
-        basket = new ArrayList<>();
+        basket = new Basket();
     }
 
     public void run() {
@@ -79,7 +79,7 @@ public class Application {
                         } else {
                             view.print("Logged in unsuccessful!\n");
                         }
-                        continue;
+                        break;
                     default:
                         break;
                 }
@@ -93,7 +93,7 @@ public class Application {
                         customer = null;
                         loggedIn = false;
                         view.print("Logged out unsuccessful!\n");
-                        continue;
+                        break;
                     default:
                         break;
                 }
@@ -103,20 +103,56 @@ public class Application {
                 case BROWSE_BOOK:
                     ArrayList<Book> books = browseBook();
                     view.customerBrowseBook(books);
-                    continue;
+                    break;
                 case ADD_BOOK:
-                    view.print("What is the ISBN of the book that you want to order?\n");
-                    int ISBN = view.getInt();
-                    Book book = getBook(ISBN);
-                    view.print("How many do you want to order?\n");
-                    int unit_ordered = view.getInt();
-                    addToBasket(book, unit_ordered);
-                    continue;
+                {
+                    Book book = null;
+                    int numOfBooks = -1;
+                    do {
+                        view.print("What is the ISBN of the book that you want to order?\n");
+                        int ISBN = view.getInt();
+                        book = getBook(ISBN);
+                        if (book == null) {
+                            view.print("Unknown Book\n");
+                        }
+                    } while (book == null);
+
+                    do {
+                        view.print("How many do you want to order? (0 if you change your mind)\n");
+                        numOfBooks = view.getInt();
+                        basket.add(book, numOfBooks);
+                    } while (numOfBooks < 0);
+                    break;
+                }
                 case REMOVE_BOOK:
-                    view.print("What is the ISBN of the book that you want to remove?\n");
+                {
+                    int ISBN = -1;
+                    int numOfBooks = -1;
+                    boolean bookExists = false;
+
+                    do {
+                        view.print("What is the ISBN of the book that you want to remove?\n");
+                        ISBN = view.getInt();
+                        bookExists = basket.exists(ISBN);
+                        if (!bookExists) {
+                            view.print("Book not in basket\n");
+                        }
+                    } while (!bookExists);
+
+                    do {
+                        view.print("How many do you want to remove? (0 if you change your mind)\n");
+                        numOfBooks = view.getInt();
+                        if (numOfBooks < 0) {
+                            view.print("Please enter a positive value\n");
+                        }
+                        basket.remove(ISBN, numOfBooks);
+                    } while (numOfBooks < 0);
+                    break;
+                    
+                }
                 case SHOW_BASKET:
                     view.customerShowBasket(basket);
-                    continue;
+                    break;
                 case EXIT:
                     view.print("Back to Main View\n");
                     break;
@@ -211,23 +247,6 @@ public class Application {
             e.printStackTrace();
         }
         return book;
-    }
-
-    void addToBasket(Book book, int numOfBook) {
-        // Check if book already exist
-        boolean bookExist = false;
-
-        for (BookOrder bookOrder:basket) {
-            if (bookOrder.book.equals(book)) {
-                bookExist = true;
-                bookOrder.unit_ordered += numOfBook;
-            }
-        }
-
-        if (!bookExist) {
-            basket.add(new BookOrder(book, numOfBook));
-        }
-
     }
 
     private void ownerControl() {
