@@ -9,45 +9,46 @@ drop table Owner;
 drop table Customer;
 
 create table Publisher(
-    publisher_id    serial,
+    name           varchar(50),
     email           varchar(50),
     bank_account    varchar(50),
     balance         real,
     address         varchar(50),
     phone_number    varchar(20),
-    primary key (publisher_id)
+    primary key (name)
 );
 
 create table Book (
     ISBN            integer,
-    publisher_id    integer,
-    name            varchar(50),
+    publisher_name  varchar(50),
+    book_name       varchar(50),
     genre           varchar(50),
     description     varchar(50),    
     num_of_pages    integer,    
     price           real,
     primary key (ISBN),
-    foreign key (publisher_id) references Publisher(publisher_id)
+    foreign key (publisher_name) references Publisher(name)
 );
 
 create table Author(
-    author_id   integer,
     ISBN        integer,
     name        varchar(50),
-    primary key (author_id, ISBN),
+    primary key (ISBN, name),
     foreign key (ISBN) references Book(ISBN)
         on delete cascade
 );
 
 create table Owner(
-    owner_id    serial,
-    name        varchar(50),
-    primary key (owner_id)
+    name            varchar(50),
+    bank_account    varchar(50),
+    email           varchar(50),
+    phone_number    varchar(50),
+    primary key (name)
 );
 
 create table Collect(
     ISBN                integer,
-    owner_id            integer,
+    owner_name          varchar(50),
     unit_in_stock       integer,
     unit_sold           integer,
     revenue             real,
@@ -55,16 +56,15 @@ create table Collect(
     primary key (ISBN),
     foreign key (ISBN) references Book(ISBN)
         on delete cascade,
-    foreign key (owner_id) references Owner(owner_id)
+    foreign key (owner_name) references Owner(name)
         on delete cascade
 );
 
 create table Customer(
-    customer_id         serial,
     name                varchar(50),
     billing_address     varchar(50),
     shipping_address    varchar(50),
-    primary key (customer_id)
+    primary key (name)
 );
 
 -- PSQL doesn't accept "Order" as the table name :)
@@ -91,12 +91,12 @@ create table OrderBook(
 );
 
 create table CustomerOrder(
-    order_id    int,
-    customer_id int,
+    order_id        int,
+    customer_name   varchar(50),
     primary key (order_id),
     foreign key (order_id) references TheOrder(order_id)
         on delete cascade,
-    foreign key (customer_id) references Customer(customer_id)
+    foreign key (customer_name) references Customer(name)
         on delete cascade
 );
 

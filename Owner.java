@@ -1,10 +1,15 @@
 public class Owner {
-    public int owner_id;
     public String name;
+    public String bank_account;
+    public String email;
+    public String phone_number;
+    // Collection collection;
 
-    public Owner(int owner_id, String name) {
-        this.owner_id = owner_id;
-        this.name = name;
+
+    public Owner() {
+        this.name = "";
+        this.bank_account = "";
+        this.phone_number = "";
     }
 
 }
