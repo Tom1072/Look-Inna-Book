@@ -64,6 +64,7 @@ public class Application {
 
         do {
             if (!loggedIn) {
+                // Not logged-in specific
                 view.showCustomerScreenNotLoggedIn();
                 option = view.getInt();
             
@@ -83,6 +84,7 @@ public class Application {
                         break;
                 }
             } else {
+                // Logged-in specific
                 view.showCustomerScreenLoggedIn(customer);
                 option = view.getInt();
 
@@ -108,8 +110,10 @@ public class Application {
                     Book book = getBook(ISBN);
                     view.print("How many do you want to order?\n");
                     int unit_ordered = view.getInt();
-                    basket.add(new BookOrder(book, unit_ordered));
+                    addToBasket(book, unit_ordered);
                     continue;
+                case REMOVE_BOOK:
+                    view.print("What is the ISBN of the book that you want to remove?\n");
                 case SHOW_BASKET:
                     view.customerShowBasket(basket);
                     continue;
@@ -207,6 +211,23 @@ public class Application {
             e.printStackTrace();
         }
         return book;
+    }
+
+    void addToBasket(Book book, int numOfBook) {
+        // Check if book already exist
+        boolean bookExist = false;
+
+        for (BookOrder bookOrder:basket) {
+            if (bookOrder.book.equals(book)) {
+                bookExist = true;
+                bookOrder.unit_ordered += numOfBook;
+            }
+        }
+
+        if (!bookExist) {
+            basket.add(new BookOrder(book, numOfBook));
+        }
+
     }
 
     private void ownerControl() {

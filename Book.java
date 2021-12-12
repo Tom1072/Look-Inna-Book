@@ -41,4 +41,8 @@ public class Book {
 
         return s;
     }
+
+    public boolean equals(Book anotherBook) {
+        return this.ISBN == anotherBook.ISBN;
+    }
 }
