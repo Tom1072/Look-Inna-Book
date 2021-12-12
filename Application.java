@@ -5,17 +5,19 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 
 public class Application {
-    private Connection connection;
     private View view;
     private Basket basket;
+    private JDBCController JDBC;
     Customer customer;
 
-    public Application(Connection connection) {
-        this.connection = connection;
+    public Application(String databaseName, String username, String password) {
         this.customer = null;
-        view = new View();
-        basket = new Basket();
+        this.JDBC = new JDBCController(databaseName, username, password);
+        this.view = new View();
+        this.basket = new Basket();
     }
+
+    /** Main Controllers */
 
     public void run() {
         final int EXIT           = 0;
@@ -47,6 +49,8 @@ public class Application {
         view.print("Bye byeee!\n");
     }
 
+
+    /** Controllers */
 
     private void customerControl() {
         // Common
@@ -119,7 +123,7 @@ public class Application {
     private void customerLogin() {
         view.print("Enter the name of the customer to log in:\n");
         String name = view.getString();
-        customer = getCustomer(name);
+        customer = JDBC.getCustomer(name);
         if (customer != null) {
             view.print("Logged in successfully!\n");
         } else {
@@ -144,7 +148,7 @@ public class Application {
         do {
             view.print("What is the ISBN of the book that you want to order?\n");
             int ISBN = view.getInt();
-            book = getBook(ISBN);
+            book = JDBC.getBook(ISBN);
             if (book == null) {
                 view.print("Unknown Book\n");
             }
@@ -183,7 +187,7 @@ public class Application {
     }
 
     private void customerBrowseBook() {
-        ArrayList<Book> books = getBooks();
+        ArrayList<Book> books = JDBC.getBooks();
         view.customerBrowseBook(books);
     }
 
@@ -195,93 +199,9 @@ public class Application {
         view.print("Back to Main View\n");
     }
 
+    /** Owner Controllers */
     private void ownerControl() {
 
-    }
-    private ArrayList<Book> getBooks() {
-        ArrayList<Book> books = new ArrayList<>();
-        try {
-            PreparedStatement statement = connection.prepareStatement("select * from Book;");
-            ResultSet result = statement.executeQuery();
-            if (result.next()) {
-                do {
-                    Book book = new Book();
-                    book.ISBN = result.getInt("isbn");
-                    book.book_name = result.getString("book_name");
-                    book.genre = result.getString("genre");
-                    book.description = result.getString("description");
-                    book.num_of_pages = result.getInt("num_of_pages");
-                    book.price = result.getDouble("price");
-                    book.publisher_name = result.getString("publisher_name");
-                    books.add(book);
-                } while (result.next());
-            }
-
-            statement = connection.prepareStatement("select * from Author where ISBN=?;");
-            for (Book book:books) {
-                statement.setInt(1, book.ISBN);
-                result = statement.executeQuery();
-                if (result.next()) {
-                    do {
-                        book.authors.add(result.getString("name"));
-                    } while (result.next());
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return books;
-    }
-
-    private Customer getCustomer(String name) {
-        Customer customer = null;
-        
-        try {
-            PreparedStatement statement = connection.prepareStatement("select * from Customer where name=?;");
-            statement.setString(1, name);
-            ResultSet result = statement.executeQuery();
-            if (result.next()) {
-                customer = new Customer();
-                customer.name = result.getString("name");
-                customer.billing_address = result.getString("billing_address");
-                customer.shipping_address = result.getString("shipping_address");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return customer;
-    }
-
-    private Book getBook(int ISBN) {
-        Book book = null;
-        try {
-            PreparedStatement statement = connection.prepareStatement("select * from Book where ISBN=?;");
-            statement.setInt(1, ISBN);
-            ResultSet result = statement.executeQuery();
-            if (result.next()) {
-                book = new Book();
-                book.ISBN = result.getInt("isbn");
-                book.book_name = result.getString("book_name");
-                book.genre = result.getString("genre");
-                book.description = result.getString("description");
-                book.num_of_pages = result.getInt("num_of_pages");
-                book.price = result.getDouble("price");
-                book.publisher_name = result.getString("publisher_name");
-            }
-
-            statement = connection.prepareStatement("select * from Author where ISBN=?;");
-            statement.setInt(1, book.ISBN);
-            result = statement.executeQuery();
-            if (result.next()) {
-                do {
-                    book.authors.add(result.getString("name"));
-                } while (result.next());
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return book;
     }
 
 }
