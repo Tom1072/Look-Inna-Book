@@ -109,3 +109,15 @@ insert into Customer(name, billing_address, shipping_address) values ('Customer5
 -- set unit_in_stock=unit_in_stock-1,
 -- where ISBN=1;
 
+-- Steps when placing an order
+-- Add a new entry to Order table
+-- insert into TheOrder(billing_address, shipping_address, status, ordered_date, estimated_arrival, location)
+--     values ('Billing1', 'Shipping1', 'Order Placed', '2021-12-13', '2021-12-15', 'Warehouse');
+
+-- Link the order with the customer
+-- insert into CustomerOrder(order_id, customer_name)
+--     values (1, 'Customer1');
+
+-- Link the books with the order
+-- insert into OrderBook(ISBN, order_id, unit_ordered)
+--     values (1, 1, 1);

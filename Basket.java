@@ -58,15 +58,19 @@ public class Basket {
         return exists;
     }
 
+    public void clear() {
+        bookOrders.clear();
+    }
+
     public String toString() {
-        String s = "";
+        String s = "Basket Information:\n";
         if (bookOrders.size() > 0) {
             for (BookOrder bookOrder:bookOrders) {
                 s += bookOrder;
                 s += "\n";
             }
         } else {
-            s += "Your basket is empty";
+            s += "Your basket is empty\n";
         }
         return s;
     }

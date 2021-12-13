@@ -1,7 +1,3 @@
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 
 public class Application {
@@ -93,6 +89,7 @@ public class Application {
                         break;
                     case CHECKOUT:
                         customerCheckOut();
+                        break;
                     default:
                         break;
                 }
@@ -134,12 +131,20 @@ public class Application {
     private void customerLogout() {
         customer = null;
         view.print("Logged out unsuccessful!\n");
-
     }
 
     private void customerCheckOut() {
+        String billingAddress = "";
+        String shippingAddress = "";
 
-
+        view.customerShowBasket(basket);
+        view.print("What is your billing address (leave empty to use default)\n");
+        billingAddress = view.getString();
+        billingAddress = billingAddress != "" ? billingAddress : customer.billing_address;
+        view.print("What is your shipping address (leave empty to use default)\n");
+        shippingAddress = view.getString();
+        shippingAddress = shippingAddress != "" ? shippingAddress : customer.shipping_address;
+        JDBC.customerCheckout(customer, basket, billingAddress, shippingAddress);
     }
 
     private void customerAddBook() {
