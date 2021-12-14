@@ -1,5 +1,7 @@
 import java.util.ArrayList;
 
+import org.postgresql.shaded.com.ongres.scram.common.bouncycastle.pbkdf2.Integers;
+
 public class Application {
     private View view;
     private Basket basket;
@@ -60,6 +62,7 @@ public class Application {
         final int LOG_IN         = 9;
 
         // Logged-in user only
+        final int TRACK_ORDERS   = 7;
         final int CHECKOUT       = 8;
         final int LOG_OUT        = 9;
 
@@ -90,6 +93,8 @@ public class Application {
                     case CHECKOUT:
                         customerCheckOut();
                         break;
+                    case TRACK_ORDERS:
+                        customerTrackOrders();
                     default:
                         break;
                 }
@@ -99,6 +104,7 @@ public class Application {
                 case LOG_IN:
                     // LOG_IN == LOG_OUT
                 case CHECKOUT:
+                case TRACK_ORDERS:
                     // Handled on top already
                     break;
                 case BROWSE_BOOK:
@@ -188,6 +194,42 @@ public class Application {
                 view.print("FALTAL: Unknown return code\n");
                 break;
         }
+    }
+
+    private void customerTrackOrders() {
+        ArrayList<Integer> order_ids;
+        int orderToTrack;
+        String trackAnother = "";
+        Order order;
+
+        order_ids = JDBC.getCustomerOrders(customer);
+
+        do {
+            // Print the order IDs
+            view.print("IDs of order placed:\n");
+            for (Integer order_id:order_ids) {
+                view.print("\t%d\n", order_id);
+            }
+
+            view.print("What order do you want to track?\n");
+            orderToTrack = view.getInt();
+
+            // Check if orderToTrack is in the order_ids list
+            if (!order_ids.contains(orderToTrack)) {
+                view.print("Unknown order_id, please choose from the ID list above\n");
+                continue;
+            }
+
+            // Get that order
+            order = JDBC.getOrder(orderToTrack);
+            view.print("Information about order %d:\n", orderToTrack);
+            view.print("%s\n", order);
+            view.print("Do you want to track another order (yes or no)?\n");
+            do {
+                trackAnother = view.getString();
+            } while (!trackAnother.equals("yes") && !trackAnother.equals("no"));
+
+        } while (trackAnother.equals("yes"));
     }
 
     private void customerAddBook() {
