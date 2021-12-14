@@ -13,7 +13,7 @@ public class View {
     }
 
     public void showWelcomeScreen() {
-        String s = "";
+        String s = "\n";
         s += "------------------------------------\n";
         s += "       Welcome to LookInnaBook      \n";
         s += "------------------------------------\n";
@@ -26,14 +26,14 @@ public class View {
     }
 
     public void showCustomerScreenLoggedIn(Customer customer) {
-        String s = "";
+        String s = "\n";
         s += "--------------------------------\n";
         s += "            Customer            \n";
         s += "--------------------------------\n";
         s += String.format("You are logged in as %s\n", customer.name);
         s += String.format("\n");
         s += String.format("Menu: (type the number to choose)\n");
-        s += String.format("(1) Browse book\n");
+        s += String.format("(1) Browse book that are for sale\n");
         s += String.format("(2) Add book to basket\n");
         s += String.format("(3) Remove book from basket\n");
         s += String.format("(5) Show basket\n");
@@ -46,7 +46,7 @@ public class View {
     }
 
     public void showCustomerScreenNotLoggedIn() {
-        String s = "";
+        String s = "\n";
         s += "--------------------------------\n";
         s += "            Customer            \n";
         s += "--------------------------------\n";
@@ -65,8 +65,13 @@ public class View {
     }
 
     public void customerBrowseBook(ArrayList<Book> books) {
-        for (Book book:books) {
-            System.out.println(book);
+        if (books.size() == 0) {
+            System.out.println("There is no book for sale.");
+        } else {
+            System.out.println("Here are the books for sale:");
+            for (Book book:books) {
+                System.out.println(book);
+            }
         }
     }
 
@@ -75,7 +80,7 @@ public class View {
     }
 
     public void showOwnerScreenLoggedIn(Owner owner) {
-        String s = "";
+        String s = "\n";
         s += "--------------------------------\n";
         s += "              Owner             \n";
         s += "--------------------------------\n";
@@ -93,18 +98,30 @@ public class View {
     }
 
     public void showOwnerScreenNotLoggedIn() {
-        String s = "";
+        String s = "\n";
         s += "--------------------------------\n";
         s += "              Owner             \n";
         s += "--------------------------------\n";
         s += String.format("You are not logged in!\n");
         s += String.format("\n");
         s += String.format("Menu: (type the number to choose)\n");
+        s += String.format("(1) Browse unowned books\n");
         s += String.format("(9) Log in\n");
         s += String.format("(0) Exit Owner View\n");
         s += "--------------------------------\n";
         System.out.println(s);
 
+    }
+
+    public void ownerBrowseFreeBook(ArrayList<Book> books) {
+        if (books.size() == 0) {
+            System.out.println("There is no free book left.");
+        } else {
+            System.out.println("Here are the books that are not owned by anyone:");
+            for (Book book:books) {
+                System.out.println(book);
+            }
+        }
     }
 
     public int getInt() {

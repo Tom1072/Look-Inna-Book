@@ -77,7 +77,7 @@ public class Application {
                 switch (option) {
                     case LOG_IN:
                         customerLogin();
-                        break;
+                        continue;
                     default:
                         break;
                 }
@@ -89,10 +89,10 @@ public class Application {
                 switch (option) {
                     case LOG_OUT:
                         customerLogout();
-                        break;
+                        continue;
                     case CHECKOUT:
                         customerCheckOut();
-                        break;
+                        continue;
                     case TRACK_ORDERS:
                         customerTrackOrders();
                     default:
@@ -101,10 +101,6 @@ public class Application {
             }
 
             switch (option) {
-                case LOG_IN: // LOG_IN == LOG_OUT
-                case CHECKOUT:
-                case TRACK_ORDERS:
-                    break; // These cases are handled on top already
                 case BROWSE_BOOK:
                     customerBrowseBook();
                     break;
@@ -127,19 +123,23 @@ public class Application {
         } while (option != EXIT);
     }
     private void customerLogin() {
-        view.print("Enter the name of the customer to log in:\n");
-        String name = view.getString();
-        customer = JDBC.getCustomer(name);
-        if (customer != null) {
-            view.print("Logged in successfully!\n");
-        } else {
-            view.print("Logged in unsuccessful!\n");
+        if (customer == null) {
+            view.print("Enter the name of the customer to log in:\n");
+            String name = view.getString();
+            customer = JDBC.getCustomer(name);
+            if (customer != null) {
+                view.print("Customer logged in successfully!\n");
+            } else {
+                view.print("Customer logged in unsuccessfully!\n");
+            }
         }
     }
 
     private void customerLogout() {
-        customer = null;
-        view.print("Logged out unsuccessful!\n");
+        if (customer != null) {
+            customer = null;
+            view.print("Customer logged out successfully!\n");
+        }
     }
 
     private void customerCheckOut() {
@@ -275,7 +275,7 @@ public class Application {
     }
 
     private void customerBrowseBook() {
-        ArrayList<Book> books = JDBC.getBooks();
+        ArrayList<Book> books = JDBC.getOwnedBooks();
         view.customerBrowseBook(books);
     }
 
@@ -284,20 +284,20 @@ public class Application {
     }
 
     private void customerExit() {
-        customer = null;
+        customerLogout();
         view.print("Back to Main View\n");
     }
 
     /** Owner Controllers */
     private void ownerControl() {
         // Common
+        final int BROWSE_FREE_BOOK              = 1; // Browse only the books that isn't owned by any other owner
         final int EXIT                          = 0;
 
         // Logged-out owner only
         final int LOG_IN                        = 9;
 
         // Logged-in owner only
-        final int BROWSE_FREE_BOOK              = 1; // Browse only the books that isn't owned by any other owner
         final int ADD_BOOK                      = 2; 
         final int REMOVE_BOOK                   = 3;
         final int SHOW_COLLECTION_AND_RECORD    = 4;
@@ -314,7 +314,7 @@ public class Application {
                 switch (option) {
                     case LOG_IN:
                         ownerLogin();
-                        break;
+                        continue;
                     default:
                         break;
                 }
@@ -326,31 +326,25 @@ public class Application {
                 switch (option) {
                     case LOG_OUT:
                         ownerLogout();
-                        break;
-                    case BROWSE_FREE_BOOK:
-                        ownerBrowseFreeBook();
-                        break;
+                        continue;
                     case ADD_BOOK:
                         ownerAddBook();
-                        break;
+                        continue;
                     case REMOVE_BOOK:
                         ownerRemoveBook();
-                        break;
+                        continue;
                     case SHOW_COLLECTION_AND_RECORD:
                         ownerShowCollectionAndRecord();
-                        break;
+                        continue;
                     default:
                         break;
                 }
             }
 
             switch (option) {
-                case LOG_IN: // LOG_IN == LOG_OUT
                 case BROWSE_FREE_BOOK:
-                case ADD_BOOK:
-                case REMOVE_BOOK:
-                case SHOW_COLLECTION_AND_RECORD:
-                    break; // These cases are handled on top already
+                    ownerBrowseFreeBook();
+                    break;
                 case EXIT:
                     ownerExit();
                     break;
@@ -364,19 +358,28 @@ public class Application {
 
 
     private void ownerLogin() {
-        view.print("Enter the name of the owner to log in:\n");
-        String name = view.getString();
-        owner = JDBC.getOwner(name);
-        if (owner != null) {
-            view.print("Logged in successfully!\n");
-        } else {
-            view.print("Logged in unsuccessful!\n");
+        if (owner == null) {
+            view.print("Enter the name of the owner to log in:\n");
+            String name = view.getString();
+            owner = JDBC.getOwner(name);
+            if (owner != null) {
+                view.print("Owner logged in successfully!\n");
+            } else {
+                view.print("Owner logged in unsuccessfully!\n");
+            }
         }
     }
 
     private void ownerLogout() {
-        owner = null;
-        view.print("Logged out unsuccessful!\n");
+        if (owner != null) {
+            owner = null;
+            view.print("Owner logged out successfully!\n");
+        }
+    }
+
+    private void ownerBrowseFreeBook() {
+        ArrayList<Book> books = JDBC.getFreeBooks();
+        view.ownerBrowseFreeBook(books);
     }
 
     private void ownerShowCollectionAndRecord() {
@@ -385,14 +388,12 @@ public class Application {
     private void ownerRemoveBook() {
     }
 
-    private void ownerBrowseFreeBook() {
-    }
 
     private void ownerAddBook() {
     }
 
     private void ownerExit() {
-        owner = null;
+        ownerLogout();
         view.print("Back to Main View\n");
     }
 

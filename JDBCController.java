@@ -25,10 +25,12 @@ public class JDBCController {
         }
     }
 
-    public ArrayList<Book> getBooks() {
+    public ArrayList<Book> getOwnedBooks() {
         ArrayList<Book> books = new ArrayList<>();
+        String sql;
         try {
-            PreparedStatement statement = connection.prepareStatement("select * from Book;");
+            sql = "select * from Book where ISBN in (select ISBN from Collect);";
+            PreparedStatement statement = connection.prepareStatement(sql);
             ResultSet result = statement.executeQuery();
             if (result.next()) {
                 do {
@@ -332,6 +334,43 @@ public class JDBCController {
         
     }
 
+    public ArrayList<Book> getFreeBooks() {
+        ArrayList<Book> books = new ArrayList<>();
+        String sql;
+        try {
+            sql = "select * from Book where ISBN not in (select ISBN from Collect);";
+            PreparedStatement statement = connection.prepareStatement(sql);
+            ResultSet result = statement.executeQuery();
+            if (result.next()) {
+                do {
+                    Book book = new Book();
+                    book.ISBN = result.getInt("isbn");
+                    book.book_name = result.getString("book_name");
+                    book.genre = result.getString("genre");
+                    book.description = result.getString("description");
+                    book.num_of_pages = result.getInt("num_of_pages");
+                    book.price = result.getDouble("price");
+                    book.publisher_name = result.getString("publisher_name");
+                    books.add(book);
+                } while (result.next());
+            }
+
+            statement = connection.prepareStatement("select * from Author where ISBN=?;");
+            for (Book book:books) {
+                statement.setInt(1, book.ISBN);
+                result = statement.executeQuery();
+                if (result.next()) {
+                    do {
+                        book.authors.add(result.getString("name"));
+                    } while (result.next());
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return books;
+    }
 
     private boolean isGoodReturnCodes(int[] returnCodes) {
         boolean good = true;
@@ -343,4 +382,5 @@ public class JDBCController {
         }
         return good;
     }
+
 }
