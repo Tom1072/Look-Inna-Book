@@ -49,7 +49,7 @@ create table Owner(
 create table Collect(
     ISBN                integer,
     owner_name          varchar(50),
-    unit_in_stock       integer,
+    unit_in_stock       integer check (unit_in_stock >= 0),
     unit_sold           integer,
     revenue             real,
     publisher_split     real,

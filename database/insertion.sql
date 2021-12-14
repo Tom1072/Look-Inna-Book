@@ -57,8 +57,8 @@ insert into Owner(name, bank_account, email, phone_number) values ('Owner2', 'Ba
 delete from Collect;
 
 -- owner 1 collection
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, publisher_split) values (1, 'Owner1', 0, 0, 0, 0.2);
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, publisher_split) values (2, 'Owner1', 0, 0, 0, 0.3);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, publisher_split) values (1, 'Owner1', 10, 0, 0, 0.2);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, publisher_split) values (2, 'Owner1', 10, 0, 0, 0.3);
 insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, publisher_split) values (3, 'Owner1', 0, 0, 0, 0.4);
 insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, publisher_split) values (4, 'Owner1', 0, 0, 0, 0.5);
 insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, publisher_split) values (5, 'Owner1', 0, 0, 0, 0.1);

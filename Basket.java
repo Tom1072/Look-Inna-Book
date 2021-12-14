@@ -46,6 +46,10 @@ public class Basket {
         return bookOrder;
     }
 
+    public BookOrder getBookOrderAt(int i) {
+        return bookOrders.get(i);
+    }
+
     public boolean exists(int ISBN) {
         boolean exists = false;
         for (BookOrder bo:bookOrders) {
@@ -63,15 +67,18 @@ public class Basket {
     }
 
     public String toString() {
+        double total = 0;
         String s = "Basket Information:\n";
         if (bookOrders.size() > 0) {
             for (BookOrder bookOrder:bookOrders) {
+                total += (bookOrder.book.price * bookOrder.unit_ordered);
                 s += bookOrder;
                 s += "\n";
             }
         } else {
             s += "Your basket is empty\n";
         }
+        s += String.format("Your order total is: %f", total);
         return s;
     }
 }
