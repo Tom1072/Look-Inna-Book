@@ -50,32 +50,29 @@ insert into Author(ISBN, name) values (9, 'Author10');
 
 -- Owner
 delete from Owner;
-insert into Owner(name, bank_account, email, phone_number) values ('Owner1', 'BankAccount1', 'Owner1@email.com', '613 456 7890');
-insert into Owner(name, bank_account, email, phone_number) values ('Owner2', 'BankAccount2', 'Owner2@email.com', '613 456 7891');
+insert into Owner(name, bank_account, balance, email, phone_number) values ('Owner1', 'BankAccount1', 100000, 'Owner1@email.com', '613 456 7890');
+insert into Owner(name, bank_account, balance, email, phone_number) values ('Owner2', 'BankAccount2', 100000, 'Owner2@email.com', '613 456 7891');
 
 -- Collect
 delete from Collect;
 
 -- owner 1 collection
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, publisher_split) values (1, 'Owner1', 10, 0, 0, 0.2);
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, publisher_split) values (2, 'Owner1', 10, 0, 0, 0.3);
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, publisher_split) values (3, 'Owner1', 0, 0, 0, 0.4);
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, publisher_split) values (4, 'Owner1', 0, 0, 0, 0.5);
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, publisher_split) values (5, 'Owner1', 0, 0, 0, 0.1);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (3, 'Owner1', 10, 0, 0, 0, 0, 0.4);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (4, 'Owner1', 10, 0, 0, 0, 0, 0.5);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (5, 'Owner1', 10, 0, 0, 0, 0, 0.1);
 
 -- owner 2 collection
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, publisher_split) values (6, 'Owner2', 0, 0, 0, 0.2);
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, publisher_split) values (7, 'Owner2', 0, 0, 0, 0.1);
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, publisher_split) values (8, 'Owner2', 0, 0, 0, 0.3);
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, publisher_split) values (9, 'Owner2', 0, 0, 0, 0.2);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (7, 'Owner2', 20, 0, 0, 0, 0, 0.1);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (8, 'Owner2', 20, 0, 0, 0, 0, 0.3);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (9, 'Owner2', 20, 0, 0, 0, 0, 0.2);
 
 -- Customer
 delete from Customer;
-insert into Customer(name, billing_address, shipping_address) values ('Customer1', 'BillingAddress1', 'ShippingAddress1');
-insert into Customer(name, billing_address, shipping_address) values ('Customer2', 'BillingAddress2', 'ShippingAddress2');
-insert into Customer(name, billing_address, shipping_address) values ('Customer3', 'BillingAddress3', 'ShippingAddress3');
-insert into Customer(name, billing_address, shipping_address) values ('Customer4', 'BillingAddress3', 'ShippingAddress4');
-insert into Customer(name, billing_address, shipping_address) values ('Customer5', 'BillingAddress4', 'ShippingAddress4');
+insert into Customer(name, bank_account, balance, billing_address, shipping_address) values ('Customer1', 'BankAccount1', 100000, 'BillingAddress1', 'ShippingAddress1');
+insert into Customer(name, bank_account, balance, billing_address, shipping_address) values ('Customer2', 'BankAccount2', 100000, 'BillingAddress2', 'ShippingAddress2');
+insert into Customer(name, bank_account, balance, billing_address, shipping_address) values ('Customer3', 'BankAccount3', 100000, 'BillingAddress3', 'ShippingAddress3');
+insert into Customer(name, bank_account, balance, billing_address, shipping_address) values ('Customer4', 'BankAccount4', 100000, 'BillingAddress3', 'ShippingAddress4');
+insert into Customer(name, bank_account, balance, billing_address, shipping_address) values ('Customer5', 'BankAccount5', 100000, 'BillingAddress4', 'ShippingAddress4');
 
 -- Order, CustomerOrder, and OrderBook
 -- delete from TheOrder;

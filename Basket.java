@@ -66,6 +66,18 @@ public class Basket {
         bookOrders.clear();
     }
 
+    /**
+     * 
+     * @return the total revenue on perspective of Book Owner, the total cost on perspective of Customer
+     */
+    public double getTotalRevenue() {
+        double total = 0;
+        for (BookOrder bookOrder:bookOrders) {
+            total += bookOrder.getRevenue();
+        }
+        return total;
+    }
+
     public String toString() {
         double total = 0;
         String s = "Basket Information:\n";

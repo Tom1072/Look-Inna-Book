@@ -12,6 +12,19 @@ public class BookOrder {
         this.unit_ordered = -1;
     }
 
+    public double getRevenue() {
+        return (this.book.price * this.unit_ordered);
+    }
+
+    public double getExpense() {
+        return (this.getRevenue() * this.book.publisher_split);
+
+    }
+
+    public double getProfit() {
+        return (this.getRevenue() * (1 - this.book.publisher_split));
+    }
+
     public String toString() {
         String s = "";
         s += String.format("Unit order: %d\n", this.unit_ordered);
