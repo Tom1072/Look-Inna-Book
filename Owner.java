@@ -9,6 +9,7 @@ public class Owner {
     public Owner() {
         this.name = "";
         this.bank_account = "";
+        this.email = "";
         this.phone_number = "";
     }
 

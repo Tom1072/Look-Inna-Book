@@ -74,8 +74,36 @@ public class View {
         System.out.println(basket);
     }
 
+    public void showOwnerScreenLoggedIn(Owner owner) {
+        String s = "";
+        s += "--------------------------------\n";
+        s += "              Owner             \n";
+        s += "--------------------------------\n";
+        s += String.format("You are logged in as %s\n", owner.name);
+        s += String.format("\n");
+        s += String.format("Menu: (type the number to choose)\n");
+        s += String.format("(1) Browse unowned books\n");
+        s += String.format("(2) Add book to collection\n");
+        s += String.format("(3) Remove book from collection\n");
+        s += String.format("(4) Show collection and record\n");
+        s += String.format("(9) Log out\n");
+        s += String.format("(0) Exit Owner View\n");
+        s += "--------------------------------\n";
+        System.out.println(s);
+    }
 
-    public void showOwnerScreen() {
+    public void showOwnerScreenNotLoggedIn() {
+        String s = "";
+        s += "--------------------------------\n";
+        s += "              Owner             \n";
+        s += "--------------------------------\n";
+        s += String.format("You are not logged in!\n");
+        s += String.format("\n");
+        s += String.format("Menu: (type the number to choose)\n");
+        s += String.format("(9) Log in\n");
+        s += String.format("(0) Exit Owner View\n");
+        s += "--------------------------------\n";
+        System.out.println(s);
 
     }
 
