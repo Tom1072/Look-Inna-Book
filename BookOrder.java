@@ -27,8 +27,8 @@ public class BookOrder {
 
         s += String.format("    Publisher: %s\n", this.book.publisher_name);
         s += String.format("    Genre: %s\n", this.book.genre);
-        s += String.format("    Price: $%f\n", this.book.price);
-        s += String.format("Total: $%f\n", this.book.price * this.unit_ordered);
+        s += String.format("    Unit Price: $%f\n", this.book.price);
+        s += String.format("    Subtotal for this book: $%f\n", this.book.price * this.unit_ordered);
         return s;
     }
     

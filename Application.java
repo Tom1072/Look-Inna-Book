@@ -96,6 +96,11 @@ public class Application {
             }
 
             switch (option) {
+                case LOG_IN:
+                    // LOG_IN == LOG_OUT
+                case CHECKOUT:
+                    // Handled on top already
+                    break;
                 case BROWSE_BOOK:
                     customerBrowseBook();
                     break;
@@ -136,7 +141,18 @@ public class Application {
     private void customerCheckOut() {
         String billingAddress = "";
         String shippingAddress = "";
+        int returnCode;
 
+        // Return code from JDBCController.customerCheckout()
+        final int SUCCESS                           = 0;
+        final int INSUFFICIENT_STOCK                = 1;
+        final int SELECT_TUPPLE_FAILED              = 2;
+        final int GET_INSERTED_TUPPLE_FAILED        = 3;
+        final int INSERT_INTO_ORDER_FAILED          = 4;
+        final int INSERT_INTO_CUSTOMERORDER_FAILED  = 5;
+        final int INSERT_INTO_ORDERBOOK_FAILED      = 6;
+
+        // Enter information
         view.customerShowBasket(basket);
         view.print("What is your billing address (leave empty to use default)\n");
         billingAddress = view.getString();
@@ -144,7 +160,34 @@ public class Application {
         view.print("What is your shipping address (leave empty to use default)\n");
         shippingAddress = view.getString();
         shippingAddress = shippingAddress != "" ? shippingAddress : customer.shipping_address;
-        JDBC.customerCheckout(customer, basket, billingAddress, shippingAddress);
+        returnCode = JDBC.customerCheckout(customer, basket, billingAddress, shippingAddress);
+        switch (returnCode) {
+            case SUCCESS:
+                view.print("Order placed successful!\n");
+                basket.clear();
+                break;
+            case INSUFFICIENT_STOCK:
+                view.print("Order canceled because of insufficient stock\n");
+                break; 
+            case SELECT_TUPPLE_FAILED:
+                view.print("FATAL: Select tupple failed\n");
+                break;
+            case GET_INSERTED_TUPPLE_FAILED:
+                view.print("FATAL: Inserted tuple but cannot retrieve it\n");
+                break;
+            case INSERT_INTO_ORDER_FAILED:
+                view.print("FALTAL: Insert into Order failed\n");
+                break;
+            case INSERT_INTO_CUSTOMERORDER_FAILED:
+                view.print("FALTAL: Insert into CustomerOrder failed\n");
+                break;
+            case INSERT_INTO_ORDERBOOK_FAILED:
+                view.print("FALTAL: Insert into OrderBook failed\n");
+                break;
+            default:
+                view.print("FALTAL: Unknown return code\n");
+                break;
+        }
     }
 
     private void customerAddBook() {

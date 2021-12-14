@@ -95,6 +95,8 @@ public class JDBCController {
                 book.num_of_pages = result.getInt("num_of_pages");
                 book.price = result.getDouble("price");
                 book.publisher_name = result.getString("publisher_name");
+            } else {
+                return null;
             }
 
             statement = connection.prepareStatement("select * from Author where ISBN=?;");
@@ -111,24 +113,69 @@ public class JDBCController {
         return book;
     }
 
-    public void customerCheckout(Customer customer, Basket basket, String billingAddress, String shippingAddress) {
+    /**
+     * Checkout the "basket" under "customer", assume that all orders in basket is in stock
+     * @param customer
+     * @param basket
+     * @param billingAddress
+     * @param shippingAddress
+     */
+    public int customerCheckout(Customer customer, Basket basket, String billingAddress, String shippingAddress) {
+        int[] returnCodes;
+        int rowCount;
+        PreparedStatement statement;
+        ResultSet result;
+        String sql;
+
+        // Return code
+        final int SUCCESS                           = 0;
+        final int INSUFFICIENT_STOCK                = 1;
+        final int SELECT_TUPPLE_FAILED              = 2;
+        final int GET_INSERTED_TUPPLE_FAILED        = 3;
+        final int INSERT_INTO_ORDER_FAILED          = 4;
+        final int INSERT_INTO_CUSTOMERORDER_FAILED  = 5;
+        final int INSERT_INTO_ORDERBOOK_FAILED      = 6;
+
         int order_id = -1;
         String status = "Order placed";
         Date orderedDate = new Date(System.currentTimeMillis());
         Date estimatedArrivalDate = new Date(System.currentTimeMillis() + ((random.nextInt() % 20 + 5) * MS_PER_DAY));
         String location = "Warehouse";
         
-
         try {
-            // Create the order
-            int rowCount;
-            PreparedStatement statement;
-            ResultSet result;
-            String insertQuery = "";
-            insertQuery += "insert into TheOrder(billing_address, shipping_address, status, ordered_date, estimated_arrival, location)";
-            insertQuery += "    values (?, ?, ?, ?, ?, ?);";
+            // Check if every books are in stock
+            sql = "select unit_in_stock from Collect where ISBN=?";
+            statement = connection.prepareStatement(sql);
+            for (BookOrder bookOrder:basket.bookOrders) {
+                statement.setInt(1, bookOrder.book.ISBN);
+                result = statement.executeQuery();
+                if (result.next()) {
+                    if (result.getInt("unit_in_stock") < bookOrder.unit_ordered) {
+                        return INSUFFICIENT_STOCK;
+                    }
+                } else {
+                    return SELECT_TUPPLE_FAILED;
+                }
+            }
 
-            statement = connection.prepareStatement(insertQuery, Statement.RETURN_GENERATED_KEYS);
+            // Decrement the unit_in_stock of each book in owner collection
+            sql = "update Collect set unit_in_stock=unit_in_stock-? where ISBN=?";
+            statement = connection.prepareStatement(sql);
+            for (BookOrder bookOrder:basket.bookOrders) {
+                statement.setInt(1, bookOrder.unit_ordered);
+                statement.setInt(2, bookOrder.book.ISBN);
+                statement.addBatch();
+            }
+            returnCodes = statement.executeBatch();
+            if (!isGoodReturnCodes(returnCodes)) {
+                return INSUFFICIENT_STOCK;
+            }
+
+            // Create the order
+            sql = "insert into TheOrder(billing_address, shipping_address, status, ordered_date, estimated_arrival, location)";
+            sql += "    values (?, ?, ?, ?, ?, ?);";
+
+            statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             statement.setString(1, billingAddress);
             statement.setString(2, shippingAddress);
             statement.setString(3, status);
@@ -137,53 +184,58 @@ public class JDBCController {
             statement.setString(6, location);
             rowCount = statement.executeUpdate();
             if (rowCount > 0) {
-                System.out.println("insert into Order succeeded");
                 result = statement.getGeneratedKeys();
                 if (result.next()) {
                     order_id = result.getInt("order_id");
                 } else {
-                    System.out.println("Cannot get the new inserted tuple");
+                    // System.out.println("Cannot get the new inserted tuple");
+                    return GET_INSERTED_TUPPLE_FAILED;
                 }
             } else {
-                System.out.println("insert into Order failed");
-
+                // System.out.println("insert into Order failed");
+                return INSERT_INTO_ORDER_FAILED;
             }
             // System.out.printf("order_id = %d", order_id);
 
-            // Link the books ordered to the order
-            for (BookOrder bookOrder:basket.bookOrders) {
-                insertQuery = "insert into OrderBook(ISBN, order_id, unit_ordered) values (?, ?, ?)";
-                statement = connection.prepareStatement(insertQuery);
-                statement.setInt(1, bookOrder.book.ISBN);
-                statement.setInt(2, order_id);
-                statement.setInt(3, bookOrder.unit_ordered);
-                rowCount = statement.executeUpdate();
-                if (rowCount > 0) {
-                    System.out.println("insert into OrderBook succeeded");
-                } else {
-                    System.out.println("insert into OrderBook failed");
-                }
-            }
-
             // Link the customer to the order
-            insertQuery = "insert into CustomerOrder(order_id, customer_name) values (?, ?)";
-            statement = connection.prepareStatement(insertQuery);
+            sql = "insert into CustomerOrder(order_id, customer_name) values (?, ?)";
+            statement = connection.prepareStatement(sql);
             statement.setInt(1, order_id);
             statement.setString(2, customer.name);
             rowCount = statement.executeUpdate();
-            if (rowCount > 0) {
-                System.out.println("insert into CustomerOrder succeeded");
-            } else {
-                System.out.println("insert into CustomerOrder failed");
+            if (rowCount == 0) {
+                // System.out.println("insert into CustomerOrder failed");
+                return INSERT_INTO_CUSTOMERORDER_FAILED;
             }
 
+            // Link the books ordered to the order
+            for (BookOrder bookOrder:basket.bookOrders) {
+                sql = "insert into OrderBook(ISBN, order_id, unit_ordered) values (?, ?, ?)";
+                statement = connection.prepareStatement(sql);
+                statement.setInt(1, bookOrder.book.ISBN);
+                statement.setInt(2, order_id);
+                statement.setInt(3, bookOrder.unit_ordered);
+                statement.addBatch();
+            }
+            returnCodes = statement.executeBatch();
+            if (!isGoodReturnCodes(returnCodes)) {
+                return INSERT_INTO_ORDERBOOK_FAILED;
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
+        return SUCCESS;
+    }
 
-        // System.out.println(orderedDate);
-        // System.out.println(estimatedArrivalDate);
-
+    private boolean isGoodReturnCodes(int[] returnCodes) {
+        boolean good = true;
+        for (int i=0; i<returnCodes.length; i++) {
+            if (returnCodes[i] == 0) {
+                good = false;
+                break;
+            }
+        }
+        return good;
     }
 }
