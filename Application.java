@@ -1,7 +1,5 @@
 import java.util.ArrayList;
 
-import org.postgresql.shaded.com.ongres.scram.common.bouncycastle.pbkdf2.Integers;
-
 public class Application {
     private View view;
     private Basket basket;
@@ -189,7 +187,7 @@ public class Application {
                 view.print("FALTAL: Insert into OrderBook failed\n");
                 break;
             default:
-                view.print("FALTAL: Unknown return code\n");
+                view.print("FALTAL: Unknown return code %d\n", returnCode);
                 break;
         }
     }
@@ -236,9 +234,9 @@ public class Application {
         do {
             view.print("What is the ISBN of the book that you want to order?\n");
             int ISBN = view.getInt();
-            book = JDBC.getBook(ISBN);
+            book = JDBC.getCustomerBook(ISBN);
             if (book == null) {
-                view.print("Unknown Book\n");
+                view.print("Unknown Book or Book not collected\n\n");
             }
         } while (book == null);
 
@@ -275,7 +273,18 @@ public class Application {
     }
 
     private void customerBrowseBook() {
-        ArrayList<Book> books = JDBC.getOwnedBooks();
+        ArrayList<Book> books = JDBC.getCustomerBooks();
+        
+        view.print("Adjust your filter to browse for book:\n");
+        view.print("(1) Book name:\n");
+        view.print("(2) Author name:\n");
+        view.print("(3) Genre:\n");
+        view.print("(4) Publisher:\n");
+        view.print("(5) Number of pages:\n");
+        view.print("(6) Price:\n");
+        view.print("(7) Number of pages:\n");
+
+
         view.customerBrowseBook(books);
     }
 
@@ -382,15 +391,49 @@ public class Application {
         view.ownerBrowseFreeBook(books);
     }
 
-    private void ownerShowCollectionAndRecord() {
-    }
-
     private void ownerRemoveBook() {
     }
 
-
     private void ownerAddBook() {
     }
+
+    private void ownerShowCollectionAndRecord() {
+        ArrayList<Integer> ISBNs;
+        int bookToShow;
+        String getAnother = "";
+        Collection collection;
+
+        ISBNs = JDBC.getOwnerCollection(owner);
+
+        do {
+            // Print the ISBNs
+            view.print("ISBNs of books in the collection:\n");
+            for (Integer ISBN:ISBNs) {
+                view.print("\t%d\n", ISBN);
+            }
+
+            view.print("What book do you want to see more information about?\n");
+            bookToShow = view.getInt();
+
+            // Check if bookToShow is in the ISBNs list
+            if (!ISBNs.contains(bookToShow)) {
+                view.print("Unknown ISBN, please choose from the ISBN list above\n");
+                continue;
+            }
+
+            // Get that book information
+            collection = JDBC.getBookForOwner(bookToShow);
+            view.print("Information about book with ISBN %d:\n", bookToShow);
+            view.print("%s\n", collection);
+            view.print("Do you want to see another book in your collection? (yes or no)?\n");
+            do {
+                getAnother = view.getString();
+            } while (!getAnother.equals("yes") && !getAnother.equals("no"));
+
+        } while (getAnother.equals("yes"));
+
+    }
+
 
     private void ownerExit() {
         ownerLogout();

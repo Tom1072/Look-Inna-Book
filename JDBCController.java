@@ -25,36 +25,26 @@ public class JDBCController {
         }
     }
 
-    public ArrayList<Book> getOwnedBooks() {
+    /**
+     * 
+     * @return Books that are collected by any owner
+     */
+    public ArrayList<Book> getCustomerBooks() {
         ArrayList<Book> books = new ArrayList<>();
+        ArrayList<Integer> ISBNs = new ArrayList<>();
         String sql;
         try {
-            sql = "select * from Book where ISBN in (select ISBN from Collect);";
+            sql = "select ISBN from Book where ISBN in (select ISBN from Collect);";
             PreparedStatement statement = connection.prepareStatement(sql);
             ResultSet result = statement.executeQuery();
             if (result.next()) {
                 do {
-                    Book book = new Book();
-                    book.ISBN = result.getInt("isbn");
-                    book.book_name = result.getString("book_name");
-                    book.genre = result.getString("genre");
-                    book.description = result.getString("description");
-                    book.num_of_pages = result.getInt("num_of_pages");
-                    book.price = result.getDouble("price");
-                    book.publisher_name = result.getString("publisher_name");
-                    books.add(book);
+                    ISBNs.add(result.getInt("ISBN"));
                 } while (result.next());
             }
 
-            statement = connection.prepareStatement("select * from Author where ISBN=?;");
-            for (Book book:books) {
-                statement.setInt(1, book.ISBN);
-                result = statement.executeQuery();
-                if (result.next()) {
-                    do {
-                        book.authors.add(result.getString("name"));
-                    } while (result.next());
-                }
+            for (Integer ISBN:ISBNs) {
+                books.add(getBook(ISBN));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -82,6 +72,10 @@ public class JDBCController {
         return customer;
     }
 
+    /**
+     * @param ISBN
+     * @return The Book with ISBN
+     */
     public Book getBook(int ISBN) {
         Book book = null;
         try {
@@ -101,13 +95,48 @@ public class JDBCController {
                 return null;
             }
 
-            statement = connection.prepareStatement("select * from Author where ISBN=?;");
+            // Get the author name
+            statement = connection.prepareStatement("select name from Author where ISBN=?;");
             statement.setInt(1, book.ISBN);
             result = statement.executeQuery();
             if (result.next()) {
                 do {
                     book.authors.add(result.getString("name"));
                 } while (result.next());
+            }
+
+            // Get the owner that collected this book and the publisher revenue split ratio
+            statement = connection.prepareStatement("select owner_name, publisher_split from Collect where ISBN=?;");
+            statement.setInt(1, book.ISBN);
+            result = statement.executeQuery();
+            if (result.next()) {
+                book.owner_name = result.getString("owner_name");
+                book.publisher_split = result.getDouble("publisher_split");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return book;
+    }
+
+    /**
+     * 
+     * @param ISBN
+     * @return Book with ISBN that is collected by an owner
+     */
+    public Book getCustomerBook(int ISBN) {
+        PreparedStatement statement;
+        ResultSet result;
+        String sql;
+        Book book = null;
+        try {
+            // Check if the book is collected
+            sql = "select ISBN from Collect where ISBN=?";
+            statement = connection.prepareStatement(sql);
+            statement.setInt(1, ISBN);
+            result = statement.executeQuery();
+            if (result.next()) {
+                book = getBook(ISBN);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -137,6 +166,9 @@ public class JDBCController {
         final int INSERT_INTO_ORDER_FAILED          = 4;
         final int INSERT_INTO_CUSTOMERORDER_FAILED  = 5;
         final int INSERT_INTO_ORDERBOOK_FAILED      = 6;
+        final int UPDATE_PUBLISHER_BALANCE_FAILED   = 7;
+        final int UPDATE_OWNER_BALANCE_FAILED       = 8;
+        final int UPDATE_CUSTOMER_BALANCE_FAILED    = 9;
 
         int order_id = -1;
         String status = "Order placed";
@@ -146,7 +178,7 @@ public class JDBCController {
         
         try {
             // Check if every books are in stock
-            sql = "select unit_in_stock from Collect where ISBN=?";
+            sql = "select unit_in_stock from Collect where ISBN=?;";
             statement = connection.prepareStatement(sql);
             for (BookOrder bookOrder:basket.bookOrders) {
                 statement.setInt(1, bookOrder.book.ISBN);
@@ -160,17 +192,62 @@ public class JDBCController {
                 }
             }
 
-            // Decrement the unit_in_stock of each book in owner collection
-            sql = "update Collect set unit_in_stock=unit_in_stock-? where ISBN=?";
+            // Update the book sale record in Collect
+            sql = "update Collect set unit_in_stock=unit_in_stock-?, unit_sold=unit_sold+?, revenue=revenue+?, expense=expense+?, profit=profit+? where ISBN=?;";
             statement = connection.prepareStatement(sql);
             for (BookOrder bookOrder:basket.bookOrders) {
                 statement.setInt(1, bookOrder.unit_ordered);
-                statement.setInt(2, bookOrder.book.ISBN);
+                statement.setInt(2, bookOrder.unit_ordered);
+                statement.setDouble(3, bookOrder.getRevenue());
+                statement.setDouble(4, bookOrder.getExpense());
+                statement.setDouble(5, bookOrder.getProfit());
+                statement.setInt(6, bookOrder.book.ISBN);
                 statement.addBatch();
             }
             returnCodes = statement.executeBatch();
             if (!isGoodReturnCodes(returnCodes)) {
                 return INSUFFICIENT_STOCK;
+            }
+
+            // Send the splitted revenue (owner's expense) to the Publisher balance
+            sql = "update Publisher set balance=balance+? where name=?";
+            statement = connection.prepareStatement(sql);
+            for (int i=0; i<basket.bookOrders.size(); i++) {
+                BookOrder bookOrder = basket.getBookOrderAt(i);
+                statement.setDouble(1, bookOrder.getExpense());
+                statement.setString(2, bookOrder.book.publisher_name);
+                statement.addBatch();
+            }
+
+            returnCodes = statement.executeBatch();
+            if (!isGoodReturnCodes(returnCodes)) {
+                return UPDATE_PUBLISHER_BALANCE_FAILED;
+            }
+
+            // Send the profit to the Owner balance
+            sql = "update Owner set balance=balance+? where name=?";
+            statement = connection.prepareStatement(sql);
+            for (int i=0; i<basket.bookOrders.size(); i++) {
+                BookOrder bookOrder = basket.getBookOrderAt(i);
+                statement.setDouble(1, bookOrder.getProfit());
+                statement.setString(2, bookOrder.book.owner_name);
+                statement.addBatch();
+            }
+
+            returnCodes = statement.executeBatch();
+            if (!isGoodReturnCodes(returnCodes)) {
+                return UPDATE_OWNER_BALANCE_FAILED;
+            }
+
+            // Deduce the cost from customer balance
+            sql = "update Customer set balance=balance-? where name=?";
+            statement = connection.prepareStatement(sql);
+            statement.setDouble(1, basket.getTotalRevenue());
+            statement.setString(2, customer.name);
+            statement.addBatch();
+            returnCodes = statement.executeBatch();
+            if (!isGoodReturnCodes(returnCodes)) {
+                return UPDATE_CUSTOMER_BALANCE_FAILED;
             }
 
             // Create the order
@@ -370,6 +447,63 @@ public class JDBCController {
         }
 
         return books;
+    }
+
+    public ArrayList<Integer> getOwnerCollection(Owner owner) {
+        PreparedStatement statement;
+        ResultSet result;
+        String sql;
+        ArrayList<Integer> ISBNs = new ArrayList<>();
+
+        sql = "select ISBN from Collect where owner_name=? order by ISBN;";
+
+        try {
+            statement = connection.prepareStatement(sql);
+            statement.setString(1, owner.name);
+            result = statement.executeQuery();
+            if (result.next()) {
+                do {
+                    ISBNs.add(result.getInt("ISBN"));
+                } while (result.next());
+            }
+                
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return ISBNs;
+    }
+
+    public Collection getBookForOwner(int bookToShow) {
+        PreparedStatement statement;
+        ResultSet result;
+        String sql;
+        Collection collection = null;
+        
+        try {
+            // Get the information from Collect table
+            sql = "select * from Collect where ISBN=?";
+            statement = connection.prepareStatement(sql);
+            statement.setInt(1, bookToShow);
+            result = statement.executeQuery();
+            if (result.next()) {
+                collection = new Collection();
+
+                collection.ISBN = result.getInt("ISBN");
+                collection.owner_name = result.getString("owner_name");
+                collection.unit_in_stock = result.getInt("unit_in_stock");
+                collection.unit_sold = result.getInt("unit_sold");
+                collection.revenue = result.getDouble("revenue");
+                collection.publisher_split = result.getDouble("publisher_split");
+            }
+
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+        return collection;
     }
 
     private boolean isGoodReturnCodes(int[] returnCodes) {

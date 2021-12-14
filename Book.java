@@ -7,7 +7,9 @@ public class Book {
     public String description;
     public int num_of_pages;
     public double price;
+    public double publisher_split;
     public String publisher_name;
+    public String owner_name;
     public ArrayList<String> authors;
 
     public Book() {
@@ -17,7 +19,9 @@ public class Book {
         this.description = "";
         this.num_of_pages = -1;
         this.price = -1;
+        this.publisher_split = -1;
         this.publisher_name = "";
+        this.owner_name = "";
         this.authors = new ArrayList<>();
     }
 

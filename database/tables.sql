@@ -41,6 +41,7 @@ create table Author(
 create table Owner(
     name            varchar(50),
     bank_account    varchar(50),
+    balance         real,
     email           varchar(50),
     phone_number    varchar(50),
     primary key (name)
@@ -51,7 +52,9 @@ create table Collect(
     owner_name          varchar(50),
     unit_in_stock       integer check (unit_in_stock >= 0),
     unit_sold           integer,
-    revenue             real,
+    revenue             real, -- unit_sold * book price
+    expense             real, -- revenue * publisher_split
+    profit              real, -- revenue * owner_split
     publisher_split     real,
     primary key (ISBN),
     foreign key (ISBN) references Book(ISBN)
@@ -62,6 +65,8 @@ create table Collect(
 
 create table Customer(
     name                varchar(50),
+    bank_account        varchar(50),
+    balance             real,
     billing_address     varchar(50),
     shipping_address    varchar(50),
     primary key (name)

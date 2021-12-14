@@ -1,5 +1,3 @@
-import java.util.ArrayList;
-
 public class Order {
     public int order_id;
     public String billing_address;
