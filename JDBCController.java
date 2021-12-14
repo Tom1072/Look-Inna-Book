@@ -310,6 +310,29 @@ public class JDBCController {
         return order;
     }
 
+    public Owner getOwner(String name) {
+        Owner owner = null;
+        
+        try {
+            PreparedStatement statement = connection.prepareStatement("select * from Owner where name=?;");
+            statement.setString(1, name);
+            ResultSet result = statement.executeQuery();
+            if (result.next()) {
+                owner = new Owner();
+                owner.name = result.getString("name");
+                owner.bank_account = result.getString("bank_account");
+                owner.email = result.getString("email");
+                owner.phone_number = result.getString("phone_number");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return owner;
+        
+    }
+
+
     private boolean isGoodReturnCodes(int[] returnCodes) {
         boolean good = true;
         for (int i=0; i<returnCodes.length; i++) {

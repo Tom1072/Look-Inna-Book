@@ -7,6 +7,7 @@ public class Application {
     private Basket basket;
     private JDBCController JDBC;
     Customer customer;
+    Owner owner;
 
     public Application(String databaseName, String username, String password) {
         this.customer = null;
@@ -47,8 +48,7 @@ public class Application {
         view.print("Bye byeee!\n");
     }
 
-
-    /** Controllers */
+    /** Customer Controllers */
 
     private void customerControl() {
         // Common
@@ -58,10 +58,10 @@ public class Application {
         final int SHOW_BASKET    = 5;
         final int EXIT           = 0;
 
-        // Logged-out user only
+        // Logged-out customer only
         final int LOG_IN         = 9;
 
-        // Logged-in user only
+        // Logged-in customer only
         final int TRACK_ORDERS   = 7;
         final int CHECKOUT       = 8;
         final int LOG_OUT        = 9;
@@ -101,12 +101,10 @@ public class Application {
             }
 
             switch (option) {
-                case LOG_IN:
-                    // LOG_IN == LOG_OUT
+                case LOG_IN: // LOG_IN == LOG_OUT
                 case CHECKOUT:
                 case TRACK_ORDERS:
-                    // Handled on top already
-                    break;
+                    break; // These cases are handled on top already
                 case BROWSE_BOOK:
                     customerBrowseBook();
                     break;
@@ -286,12 +284,116 @@ public class Application {
     }
 
     private void customerExit() {
+        customer = null;
         view.print("Back to Main View\n");
     }
 
     /** Owner Controllers */
     private void ownerControl() {
+        // Common
+        final int EXIT                          = 0;
 
+        // Logged-out owner only
+        final int LOG_IN                        = 9;
+
+        // Logged-in owner only
+        final int BROWSE_FREE_BOOK              = 1; // Browse only the books that isn't owned by any other owner
+        final int ADD_BOOK                      = 2; 
+        final int REMOVE_BOOK                   = 3;
+        final int SHOW_COLLECTION_AND_RECORD    = 4;
+        final int LOG_OUT                       = 9;
+
+        int option = 0;
+
+        do {
+            if (owner == null) {
+                // Not logged-in specific
+                view.showOwnerScreenNotLoggedIn();
+                option = view.getInt();
+
+                switch (option) {
+                    case LOG_IN:
+                        ownerLogin();
+                        break;
+                    default:
+                        break;
+                }
+            } else {
+                // Logged-in specific
+                view.showOwnerScreenLoggedIn(owner);
+                option = view.getInt();
+
+                switch (option) {
+                    case LOG_OUT:
+                        ownerLogout();
+                        break;
+                    case BROWSE_FREE_BOOK:
+                        ownerBrowseFreeBook();
+                        break;
+                    case ADD_BOOK:
+                        ownerAddBook();
+                        break;
+                    case REMOVE_BOOK:
+                        ownerRemoveBook();
+                        break;
+                    case SHOW_COLLECTION_AND_RECORD:
+                        ownerShowCollectionAndRecord();
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            switch (option) {
+                case LOG_IN: // LOG_IN == LOG_OUT
+                case BROWSE_FREE_BOOK:
+                case ADD_BOOK:
+                case REMOVE_BOOK:
+                case SHOW_COLLECTION_AND_RECORD:
+                    break; // These cases are handled on top already
+                case EXIT:
+                    ownerExit();
+                    break;
+                default:
+                    view.print("Unknown option\n");
+                    break;
+            }
+        } while (option != EXIT);
+
+    }
+
+
+    private void ownerLogin() {
+        view.print("Enter the name of the owner to log in:\n");
+        String name = view.getString();
+        owner = JDBC.getOwner(name);
+        if (owner != null) {
+            view.print("Logged in successfully!\n");
+        } else {
+            view.print("Logged in unsuccessful!\n");
+        }
+    }
+
+    private void ownerLogout() {
+        owner = null;
+        view.print("Logged out unsuccessful!\n");
+    }
+
+    private void ownerShowCollectionAndRecord() {
+    }
+
+    private void ownerRemoveBook() {
+    }
+
+    private void ownerBrowseFreeBook() {
+    }
+
+    private void ownerAddBook() {
+    }
+
+    private void ownerExit() {
+        owner = null;
+        view.print("Back to Main View\n");
     }
 
 }
