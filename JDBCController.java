@@ -228,6 +228,88 @@ public class JDBCController {
         return SUCCESS;
     }
 
+    /**
+     * 
+     * @param customer
+     * @return the order_ids of that customer
+     */
+    public ArrayList<Integer> getCustomerOrders(Customer customer) {
+        PreparedStatement statement;
+        ResultSet result;
+        String sql;
+        ArrayList<Integer> order_ids = new ArrayList<>();
+
+        sql = "select order_id from CustomerOrder where customer_name=?";
+
+        try {
+            statement = connection.prepareStatement(sql);
+            statement.setString(1, customer.name);
+            result = statement.executeQuery();
+            if (result.next()) {
+                do {
+                    order_ids.add(result.getInt("order_id"));
+                } while (result.next());
+            }
+                
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return order_ids;
+    }
+
+    public Order getOrder(int order_id) {
+        Order order = null;
+        PreparedStatement statement;
+        ResultSet result;
+        String sql;
+        ArrayList<Integer> ISBNs = new ArrayList<>();
+        ArrayList<Integer> unit_ordereds = new ArrayList<>();
+
+
+        try {
+            // Get the order itself in TheOrder
+            sql = "select * from TheOrder where order_id=?";
+            statement = connection.prepareStatement(sql);
+            statement.setInt(1, order_id);
+            result = statement.executeQuery();
+            if (result.next()) {
+                order = new Order();
+                order.order_id = result.getInt("order_id");
+                order.billing_address = result.getString("billing_address");
+                order.shipping_address = result.getString("shipping_address");
+                order.status = result.getString("status");
+                order.ordered_date = result.getDate("ordered_date").toString();
+                order.estimated_arrival = result.getDate("estimated_arrival").toString();
+                order.location = result.getString("location");
+            }
+
+            // Get the ISBNs and unit_ordereds that is ordered in OrderBook
+            sql = "select * from OrderBook where order_id=?";
+            statement = connection.prepareStatement(sql);
+            statement.setInt(1, order_id);
+            result = statement.executeQuery();
+            if (result.next()) {
+                do {
+                    ISBNs.add(result.getInt("ISBN"));
+                    unit_ordereds.add(result.getInt("unit_ordered"));
+                } while (result.next());
+            }
+
+            // Get the Books that has the ISBN in the order
+            for (int i=0; i<ISBNs.size(); i++) {
+                Book book = getBook(ISBNs.get(i));
+                order.bookOrders.add(book, unit_ordereds.get(i));
+            }
+                
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+        return order;
+    }
+
     private boolean isGoodReturnCodes(int[] returnCodes) {
         boolean good = true;
         for (int i=0; i<returnCodes.length; i++) {
