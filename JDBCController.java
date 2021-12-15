@@ -145,7 +145,7 @@ public class JDBCController {
     }
 
     /**
-     * Checkout the "basket" under "customer", assume that all orders in basket is in stock
+     * Checkout the "basket" under "customer"
      * @param customer
      * @param basket
      * @param billingAddress
@@ -166,9 +166,8 @@ public class JDBCController {
         final int INSERT_INTO_ORDER_FAILED          = 4;
         final int INSERT_INTO_CUSTOMERORDER_FAILED  = 5;
         final int INSERT_INTO_ORDERBOOK_FAILED      = 6;
-        final int UPDATE_PUBLISHER_BALANCE_FAILED   = 7;
-        final int UPDATE_OWNER_BALANCE_FAILED       = 8;
-        final int UPDATE_CUSTOMER_BALANCE_FAILED    = 9;
+        final int UPDATE_OWNER_BALANCE_FAILED       = 7;
+        final int UPDATE_CUSTOMER_BALANCE_FAILED    = 8;
 
         int order_id = -1;
         String status = "Order placed";
@@ -191,17 +190,16 @@ public class JDBCController {
                     return SELECT_TUPPLE_FAILED;
                 }
             }
+            // @TODO check if customer has sufficient fund
 
             // Update the book sale record in Collect
-            sql = "update Collect set unit_in_stock=unit_in_stock-?, unit_sold=unit_sold+?, revenue=revenue+?, expense=expense+?, profit=profit+? where ISBN=?;";
+            sql = "update Collect set unit_in_stock=unit_in_stock-?, unit_sold=unit_sold+?, revenue=revenue+? where ISBN=?;";
             statement = connection.prepareStatement(sql);
             for (BookOrder bookOrder:basket.bookOrders) {
                 statement.setInt(1, bookOrder.unit_ordered);
                 statement.setInt(2, bookOrder.unit_ordered);
                 statement.setDouble(3, bookOrder.getRevenue());
-                statement.setDouble(4, bookOrder.getExpense());
-                statement.setDouble(5, bookOrder.getProfit());
-                statement.setInt(6, bookOrder.book.ISBN);
+                statement.setInt(4, bookOrder.book.ISBN);
                 statement.addBatch();
             }
             returnCodes = statement.executeBatch();
@@ -209,27 +207,12 @@ public class JDBCController {
                 return INSUFFICIENT_STOCK;
             }
 
-            // Send the splitted revenue (owner's expense) to the Publisher balance
-            sql = "update Publisher set balance=balance+? where name=?";
-            statement = connection.prepareStatement(sql);
-            for (int i=0; i<basket.bookOrders.size(); i++) {
-                BookOrder bookOrder = basket.getBookOrderAt(i);
-                statement.setDouble(1, bookOrder.getExpense());
-                statement.setString(2, bookOrder.book.publisher_name);
-                statement.addBatch();
-            }
-
-            returnCodes = statement.executeBatch();
-            if (!isGoodReturnCodes(returnCodes)) {
-                return UPDATE_PUBLISHER_BALANCE_FAILED;
-            }
-
-            // Send the profit to the Owner balance
+            // Send the revenue to the Owner balance
             sql = "update Owner set balance=balance+? where name=?";
             statement = connection.prepareStatement(sql);
             for (int i=0; i<basket.bookOrders.size(); i++) {
                 BookOrder bookOrder = basket.getBookOrderAt(i);
-                statement.setDouble(1, bookOrder.getProfit());
+                statement.setDouble(1, bookOrder.getRevenue());
                 statement.setString(2, bookOrder.book.owner_name);
                 statement.addBatch();
             }
@@ -411,6 +394,26 @@ public class JDBCController {
         
     }
 
+    public ArrayList<Integer> getFreeBookISBNs() {
+        ArrayList<Integer> ISBNs = new ArrayList<>();
+        String sql;
+
+        try {
+            sql = "select ISBN from Book where ISBN not in (select ISBN from Collect);";
+            PreparedStatement statement = connection.prepareStatement(sql);
+            ResultSet result = statement.executeQuery();
+            if (result.next()) {
+                do {
+                    ISBNs.add(result.getInt("ISBN"));
+                } while (result.next());
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return ISBNs;
+    }
+
     public ArrayList<Book> getFreeBooks() {
         ArrayList<Book> books = new ArrayList<>();
         String sql;
@@ -449,7 +452,7 @@ public class JDBCController {
         return books;
     }
 
-    public ArrayList<Integer> getOwnerCollection(Owner owner) {
+    public ArrayList<Integer> getBooksInCollection(Owner owner) {
         PreparedStatement statement;
         ResultSet result;
         String sql;
@@ -466,15 +469,46 @@ public class JDBCController {
                     ISBNs.add(result.getInt("ISBN"));
                 } while (result.next());
             }
-                
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return ISBNs;
+    }
+
+    /**
+     * 
+     * @param name
+     * @return Get the Publisher with the given name
+     */
+    private Publisher getPublisher(String name) {
+        PreparedStatement statement;
+        ResultSet result;
+        String sql;
+        Publisher publisher = null;
+
+        try {
+            // Get the information from Collect table
+            sql = "select * from Publisher where name=?";
+            statement = connection.prepareStatement(sql);
+            statement.setString(1, name);
+            result = statement.executeQuery();
+            if (result.next()) {
+                publisher = new Publisher();
+                publisher.name = result.getString("name");
+                publisher.email = result.getString("email");
+                publisher.bank_account = result.getString("bank_account");
+                // publisher.balance = result.getDouble("balance");
+                publisher.address = result.getString("address");
+                publisher.phone_number = result.getString("phone_number");
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        return ISBNs;
+        return publisher;
     }
 
-    public Collection getBookForOwner(int bookToShow) {
+    public Collection getCollection(int ISBN) {
         PreparedStatement statement;
         ResultSet result;
         String sql;
@@ -484,7 +518,7 @@ public class JDBCController {
             // Get the information from Collect table
             sql = "select * from Collect where ISBN=?";
             statement = connection.prepareStatement(sql);
-            statement.setInt(1, bookToShow);
+            statement.setInt(1, ISBN);
             result = statement.executeQuery();
             if (result.next()) {
                 collection = new Collection();
@@ -494,16 +528,118 @@ public class JDBCController {
                 collection.unit_in_stock = result.getInt("unit_in_stock");
                 collection.unit_sold = result.getInt("unit_sold");
                 collection.revenue = result.getDouble("revenue");
+                collection.expense = result.getDouble("expense");
+                collection.profit = result.getDouble("profit");
                 collection.publisher_split = result.getDouble("publisher_split");
+                collection.book = getBook(ISBN);
+                collection.publisher = getPublisher(collection.book.publisher_name);
             }
-
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-
         return collection;
+    }
+
+    /**
+     * Add the book with ISBN to the owner's collection
+     * @param ISBN
+     * @param owner
+     * @return the returnCode, 0 for SUCCESS, FAILURE otherwise
+     */
+    public int addBookToCollection(int ISBN, Owner owner, double publisher_split) {
+        PreparedStatement statement;
+        String sql;
+        final int SUCCESS = 0;
+        final int INSERT_INTO_COLLECT_FAILED = 1;
+        int unit_in_stock = 0;
+        int unit_sold = 0;
+        double revenue = 0;
+        double expense = 0;
+        double profit = 0;
+
+        sql = "insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) ";
+        sql += "values (?, ?, ?, ?, ?, ?, ?, ?);";
+
+        try {
+            statement = connection.prepareStatement(sql);
+            statement.setInt(1, ISBN);
+            statement.setString(2, owner.name);
+            statement.setInt(3, unit_in_stock);
+            statement.setInt(4, unit_sold);
+            statement.setDouble(5, revenue);
+            statement.setDouble(6, expense);
+            statement.setDouble(7, profit);
+            statement.setDouble(8, publisher_split);
+            if (statement.executeUpdate() == 0) {
+                return INSERT_INTO_COLLECT_FAILED;
+            }
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return SUCCESS;
+    }
+
+    public int orderBookFromPublisher(int amountToOrder, Owner owner, Collection collection) {
+        PreparedStatement statement;
+        ResultSet result;
+        String sql;
+        double orderCost = collection.getPublisherSplitPerBook() * amountToOrder;
+        final int SUCESSS = 0;
+        final int INSUFFICIENT_FUND = 1;
+        final int QUERY_FAILED = 2;
+        final int UPDATE_OWNER_BALANCE_FAILED = 3;
+        final int UPDATE_PUBLISHER_BALANCE_FAILED = 4;
+        final int UPDATE_COLLECTION_FAILED = 5;
+
+        try {
+            // Check if owner has sufficient fund
+            sql = "select balance from Owner where name=?;";
+            statement = connection.prepareStatement(sql);
+            statement.setString(1, owner.name);
+            result = statement.executeQuery();
+            if (result.next()) {
+                if (result.getDouble("balance") < orderCost) {
+                    return INSUFFICIENT_FUND;
+                } 
+            } else {
+                return QUERY_FAILED;
+            }
+
+            // Withdraw from owner
+            sql = "update Owner set balance=balance-? where name=?;";
+            statement = connection.prepareStatement(sql);
+            statement.setDouble(1, orderCost);
+            statement.setString(2, owner.name);
+            if (statement.executeUpdate() == 0) {
+                return UPDATE_OWNER_BALANCE_FAILED;
+            }
+
+            // Pay the publisher
+            sql = "update Publisher set balance=balance+? where name=?;";
+            statement = connection.prepareStatement(sql);
+            statement.setDouble(1, orderCost);
+            statement.setString(2, collection.publisher.name);
+            if (statement.executeUpdate() == 0) {
+                return UPDATE_PUBLISHER_BALANCE_FAILED;
+            }
+
+            // Update the collection stock and expense
+            sql = "update Collect set unit_in_stock=unit_in_stock+?, expense=expense+? where ISBN=?;";
+            statement = connection.prepareStatement(sql);
+            statement.setInt(1, amountToOrder);
+            statement.setDouble(2, orderCost);
+            statement.setInt(3, collection.book.ISBN);
+            if (statement.executeUpdate() == 0) {
+                return UPDATE_COLLECTION_FAILED;
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return SUCESSS;
     }
 
     private boolean isGoodReturnCodes(int[] returnCodes) {

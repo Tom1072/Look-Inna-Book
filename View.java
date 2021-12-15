@@ -90,7 +90,8 @@ public class View {
         s += String.format("(1) Browse unowned books\n");
         s += String.format("(2) Add book to collection\n");
         s += String.format("(3) Remove book from collection\n");
-        s += String.format("(4) Show collection and record\n");
+        s += String.format("(4) Order book from publisher\n");
+        s += String.format("(5) Show collection and record\n");
         s += String.format("(9) Log out\n");
         s += String.format("(0) Exit Owner View\n");
         s += "--------------------------------\n";
