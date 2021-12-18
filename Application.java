@@ -7,9 +7,6 @@ public class Application {
     Customer customer;
     Owner owner;
 
-    private final int MIN_BOOK_THRESHOLD = 50;
-    private final int AMOUNT_TO_ORDER = 300;
-
     public Application(String port, String databaseName, String username, String password) {
         this.customer = null;
         this.JDBC = new JDBCController(port, databaseName, username, password);
@@ -151,6 +148,7 @@ public class Application {
         // Return code from JDBCController.customerCheckout()
         final int SUCCESS                           = 0;
         final int INSUFFICIENT_STOCK                = 1;
+        final int INSUFFICIENT_FUND                 = 2;
 
         // Enter information
         view.customerShowBasket(basket);
@@ -166,6 +164,8 @@ public class Application {
             basket.clear();
         } else if (returnCode == INSUFFICIENT_STOCK) {
             view.print("Order is canceled because of insufficient stock!\n");
+        } else if (returnCode == INSUFFICIENT_FUND) {
+            view.print("Order is canceled because of insufficient fund from customer!\n");
         } else {
             view.print("FATAL: Failed to place order! returnCode = %d\n", returnCode);
         }
@@ -503,7 +503,6 @@ public class Application {
         } while (!bookExist);
 
     }
-
 
     private void ownerExit() {
         ownerLogout();
