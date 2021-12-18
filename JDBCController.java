@@ -14,6 +14,9 @@ public class JDBCController {
     private Connection connection;
     private Random random;
 
+    private final int MIN_BOOK_THRESHOLD = 50;
+    private final int AMOUNT_TO_ORDER = 300;
+
     public JDBCController(String port, String databaseName, String username, String password) {
         this.random = new Random(System.currentTimeMillis());
         try {
@@ -161,13 +164,15 @@ public class JDBCController {
         // Return code
         final int SUCCESS                           = 0;
         final int INSUFFICIENT_STOCK                = 1;
-        final int SELECT_TUPPLE_FAILED              = 2;
-        final int GET_INSERTED_TUPPLE_FAILED        = 3;
-        final int INSERT_INTO_ORDER_FAILED          = 4;
-        final int INSERT_INTO_CUSTOMERORDER_FAILED  = 5;
-        final int INSERT_INTO_ORDERBOOK_FAILED      = 6;
-        final int UPDATE_OWNER_BALANCE_FAILED       = 7;
-        final int UPDATE_CUSTOMER_BALANCE_FAILED    = 8;
+        final int INSUFFICIENT_FUND                 = 2;
+        final int SELECT_TUPPLE_FAILED              = 3;
+        final int GET_INSERTED_TUPPLE_FAILED        = 4;
+        final int INSERT_INTO_ORDER_FAILED          = 5;
+        final int INSERT_INTO_CUSTOMERORDER_FAILED  = 6;
+        final int INSERT_INTO_ORDERBOOK_FAILED      = 7;
+        final int UPDATE_OWNER_BALANCE_FAILED       = 8;
+        final int UPDATE_CUSTOMER_BALANCE_FAILED    = 9;
+        final int GET_OWNER_BALANCE_FAILED          = 10;
 
         int order_id = -1;
         String status = "Order placed";
@@ -191,6 +196,17 @@ public class JDBCController {
                 }
             }
             // @TODO check if customer has sufficient fund
+            sql = "select balance from Customer where name=?";
+            statement = connection.prepareStatement(sql);
+            statement.setString(1, customer.name);
+            result = statement.executeQuery();
+            if (result.next()) {
+                if (result.getDouble("balance") < basket.getTotalRevenue()) {
+                    return INSUFFICIENT_FUND;
+                }
+            } else {
+                return GET_OWNER_BALANCE_FAILED;
+            }
 
             // Update the book sale record in Collect
             sql = "update Collect set unit_in_stock=unit_in_stock-?, unit_sold=unit_sold+?, revenue=revenue+? where ISBN=?;";
@@ -287,7 +303,24 @@ public class JDBCController {
             e.printStackTrace();
         }
 
+        handleAutomaticOrdering(basket);
+
         return SUCCESS;
+    }
+
+    /**
+     * Handle automatic ordering when customer succesfully checked out
+     * @param basket
+     */
+    private void handleAutomaticOrdering(Basket basket) {
+        for (BookOrder bookOrder:basket.bookOrders) {
+            Collection collection = getCollection(bookOrder.book.ISBN);;
+            if (collection.unit_in_stock < MIN_BOOK_THRESHOLD) {
+                Owner owner = getOwner(collection.owner_name);
+                orderBookFromPublisher(AMOUNT_TO_ORDER, owner, collection);
+            }
+        }
+
     }
 
     /**
