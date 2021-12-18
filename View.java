@@ -64,6 +64,19 @@ public class View {
 
     }
 
+    public void showCustomerBrowseBookMenu() {
+        String s = "";
+        s += "Adjust your filter to browse for book:\n";
+        s += "(1) Book name:\n";
+        s += "(2) Author name:\n";
+        s += "(3) Genre:\n";
+        s += "(4) Publisher:\n";
+        s += "(5) Number of pages:\n";
+        s += "(6) Price:\n";
+        s += ("7 Number of pages:\n");
+        System.out.println(s);
+    }
+
     public void customerBrowseBook(ArrayList<Book> books) {
         if (books.size() == 0) {
             System.out.println("There is no book for sale.");
@@ -90,7 +103,8 @@ public class View {
         s += String.format("(1) Browse unowned books\n");
         s += String.format("(2) Add book to collection\n");
         s += String.format("(3) Remove book from collection\n");
-        s += String.format("(4) Show collection and record\n");
+        s += String.format("(4) Order book from publisher\n");
+        s += String.format("(5) Show collection and record\n");
         s += String.format("(9) Log out\n");
         s += String.format("(0) Exit Owner View\n");
         s += "--------------------------------\n";

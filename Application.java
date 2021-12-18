@@ -7,9 +7,12 @@ public class Application {
     Customer customer;
     Owner owner;
 
-    public Application(String databaseName, String username, String password) {
+    private final int MIN_BOOK_THRESHOLD = 50;
+    private final int AMOUNT_TO_ORDER = 300;
+
+    public Application(String port, String databaseName, String username, String password) {
         this.customer = null;
-        this.JDBC = new JDBCController(databaseName, username, password);
+        this.JDBC = new JDBCController(port, databaseName, username, password);
         this.view = new View();
         this.basket = new Basket();
     }
@@ -148,11 +151,6 @@ public class Application {
         // Return code from JDBCController.customerCheckout()
         final int SUCCESS                           = 0;
         final int INSUFFICIENT_STOCK                = 1;
-        final int SELECT_TUPPLE_FAILED              = 2;
-        final int GET_INSERTED_TUPPLE_FAILED        = 3;
-        final int INSERT_INTO_ORDER_FAILED          = 4;
-        final int INSERT_INTO_CUSTOMERORDER_FAILED  = 5;
-        final int INSERT_INTO_ORDERBOOK_FAILED      = 6;
 
         // Enter information
         view.customerShowBasket(basket);
@@ -163,32 +161,13 @@ public class Application {
         shippingAddress = view.getString();
         shippingAddress = shippingAddress != "" ? shippingAddress : customer.shipping_address;
         returnCode = JDBC.customerCheckout(customer, basket, billingAddress, shippingAddress);
-        switch (returnCode) {
-            case SUCCESS:
-                view.print("Order placed successful!\n");
-                basket.clear();
-                break;
-            case INSUFFICIENT_STOCK:
-                view.print("Order canceled because of insufficient stock\n");
-                break; 
-            case SELECT_TUPPLE_FAILED:
-                view.print("FATAL: Select tupple failed\n");
-                break;
-            case GET_INSERTED_TUPPLE_FAILED:
-                view.print("FATAL: Inserted tuple but cannot retrieve it\n");
-                break;
-            case INSERT_INTO_ORDER_FAILED:
-                view.print("FALTAL: Insert into Order failed\n");
-                break;
-            case INSERT_INTO_CUSTOMERORDER_FAILED:
-                view.print("FALTAL: Insert into CustomerOrder failed\n");
-                break;
-            case INSERT_INTO_ORDERBOOK_FAILED:
-                view.print("FALTAL: Insert into OrderBook failed\n");
-                break;
-            default:
-                view.print("FALTAL: Unknown return code %d\n", returnCode);
-                break;
+        if (returnCode == SUCCESS) {
+            view.print("Order placed successful!\n");
+            basket.clear();
+        } else if (returnCode == INSUFFICIENT_STOCK) {
+            view.print("Order is canceled because of insufficient stock!\n");
+        } else {
+            view.print("FATAL: Failed to place order! returnCode = %d\n", returnCode);
         }
     }
 
@@ -274,17 +253,7 @@ public class Application {
 
     private void customerBrowseBook() {
         ArrayList<Book> books = JDBC.getCustomerBooks();
-        
-        view.print("Adjust your filter to browse for book:\n");
-        view.print("(1) Book name:\n");
-        view.print("(2) Author name:\n");
-        view.print("(3) Genre:\n");
-        view.print("(4) Publisher:\n");
-        view.print("(5) Number of pages:\n");
-        view.print("(6) Price:\n");
-        view.print("(7) Number of pages:\n");
-
-
+        view.showCustomerBrowseBookMenu();
         view.customerBrowseBook(books);
     }
 
@@ -309,7 +278,8 @@ public class Application {
         // Logged-in owner only
         final int ADD_BOOK                      = 2; 
         final int REMOVE_BOOK                   = 3;
-        final int SHOW_COLLECTION_AND_RECORD    = 4;
+        final int ORDER_BOOK                    = 4;
+        final int SHOW_COLLECTION_AND_RECORD    = 5;
         final int LOG_OUT                       = 9;
 
         int option = 0;
@@ -341,6 +311,9 @@ public class Application {
                         continue;
                     case REMOVE_BOOK:
                         ownerRemoveBook();
+                        continue;
+                    case ORDER_BOOK:
+                        ownerOrderBook();
                         continue;
                     case SHOW_COLLECTION_AND_RECORD:
                         ownerShowCollectionAndRecord();
@@ -392,18 +365,116 @@ public class Application {
     }
 
     private void ownerRemoveBook() {
+        int returnCode;
+        boolean bookExist;
+        int bookToRemove = -1;
+        ArrayList<Integer> ISBNs = JDBC.getBooksInCollection(owner);
+        
+        final int SUCCESS = 0;
+
+        do {
+            view.print("Here are the ISBN of books that belong to your collection:\n");
+            for (Integer ISBN:ISBNs) {
+                view.print("\t%d\n", ISBN);
+            }
+            view.print("What is the ISBN of the book that you want to remove?\n");
+            bookToRemove = view.getInt();
+            bookExist = ISBNs.contains(bookToRemove);
+            if (!bookExist) {
+                view.print("Book not in your collection, please choose from the list above\n");
+            } else {
+                returnCode = JDBC.removeBookFromCollection(bookToRemove);
+                if (returnCode == SUCCESS) {
+                    view.print("Book removed from collection successfully\n");
+                } else {
+                    view.print("Failed to remove book from collection, returnCode = %d\n", returnCode);
+                }
+            }
+        } while (!bookExist);
     }
 
     private void ownerAddBook() {
+        int bookToAdd;
+        ArrayList<Integer> freeISBNs = JDBC.getFreeBookISBNs();
+        int returnCode;
+        double publisher_split;
+        final int SUCESS = 0;
+
+        do {
+            view.print("Here are the uncollected book ISBNs to choose from:\n");
+            for (Integer ISBN:freeISBNs) {
+                view.print("\t%d\n", ISBN);
+            }
+            view.print("What is the ISBN of the book that you want to add to collection?\n");
+            bookToAdd = view.getInt();
+            if (!freeISBNs.contains(bookToAdd)) {
+                view.print("Book not found or already collected by other, please choose from the ISBN list above\n");
+                continue;
+            } else {
+                break;
+            }
+        } while (true);
+
+        do {
+            view.print("What percentage do you want to split the revenue with the Publisher? (enter an integer percentage from 0 to 100)\n");
+            publisher_split = (double)(view.getInt()) / (double)100;
+        } while (publisher_split < 0 || publisher_split > 1.0);
+
+        returnCode = JDBC.addBookToCollection(bookToAdd, owner, publisher_split);
+        if (returnCode == SUCESS) {
+            view.print("Book added to collection sucessfully\n");
+        } else {
+            view.print("FATAL: Book cannot be added to collection, returnCode = %d\n", returnCode);
+        }
+
+    }
+
+    private void ownerOrderBook() {
+        boolean bookExist;
+        ArrayList<Integer> ISBNs = JDBC.getBooksInCollection(owner);
+        int bookToOrder;
+        int amountToOrder;
+
+        do {
+            view.print("Here are the book ISBNs in your collection:\n");
+            for (Integer ISBN:ISBNs) {
+                view.print("\t%d\n", ISBN);
+            }
+
+            view.print("What do you want to order?\n");
+            bookToOrder = view.getInt();
+            bookExist = ISBNs.contains(bookToOrder);
+            if (!bookExist) {
+                view.print("Book not found or not in your collection, please enter the value listed\n");
+            } else {
+                view.print("How many you want to order?\n");
+                amountToOrder = view.getInt();
+                ownerOrderBook(amountToOrder, bookToOrder);
+            }
+        } while (!bookExist);
+
+    }
+
+    private void ownerOrderBook(int amountToOrder, int ISBN) {
+        int returnCode;
+        Collection collection = JDBC.getCollection(ISBN);
+        final int SUCCESS = 0;
+
+        returnCode = JDBC.orderBookFromPublisher(amountToOrder, owner, collection);
+        if (returnCode == SUCCESS) {
+            view.print("Sucessfully ordered %d books with ISBN %d from the publisher\n", amountToOrder, ISBN);
+        } else {
+            view.print("Failed to order book from publisher, returnCode = %d\n", returnCode);
+        }
     }
 
     private void ownerShowCollectionAndRecord() {
+        boolean bookExist;
         ArrayList<Integer> ISBNs;
         int bookToShow;
-        String getAnother = "";
         Collection collection;
 
-        ISBNs = JDBC.getOwnerCollection(owner);
+        ISBNs = JDBC.getBooksInCollection(owner);
 
         do {
             // Print the ISBNs
@@ -416,21 +487,20 @@ public class Application {
             bookToShow = view.getInt();
 
             // Check if bookToShow is in the ISBNs list
-            if (!ISBNs.contains(bookToShow)) {
+            bookExist = ISBNs.contains(bookToShow);
+            if (!bookExist) {
                 view.print("Unknown ISBN, please choose from the ISBN list above\n");
-                continue;
+            } else {
+                // Get that book information
+                collection = JDBC.getCollection(bookToShow);
+                if (collection != null) {
+                    view.print("Information about book with ISBN %d:\n", bookToShow);
+                    view.print("%s\n", collection);
+                } else {
+                    view.print("Failed to get collection\n");
+                }
             }
-
-            // Get that book information
-            collection = JDBC.getBookForOwner(bookToShow);
-            view.print("Information about book with ISBN %d:\n", bookToShow);
-            view.print("%s\n", collection);
-            view.print("Do you want to see another book in your collection? (yes or no)?\n");
-            do {
-                getAnother = view.getString();
-            } while (!getAnother.equals("yes") && !getAnother.equals("no"));
-
-        } while (getAnother.equals("yes"));
+        } while (!bookExist);
 
     }
 
