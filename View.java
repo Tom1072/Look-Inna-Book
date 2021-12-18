@@ -64,6 +64,19 @@ public class View {
 
     }
 
+    public void showCustomerBrowseBookMenu() {
+        String s = "";
+        s += "Adjust your filter to browse for book:\n";
+        s += "(1) Book name:\n";
+        s += "(2) Author name:\n";
+        s += "(3) Genre:\n";
+        s += "(4) Publisher:\n";
+        s += "(5) Number of pages:\n";
+        s += "(6) Price:\n";
+        s += ("7 Number of pages:\n");
+        System.out.println(s);
+    }
+
     public void customerBrowseBook(ArrayList<Book> books) {
         if (books.size() == 0) {
             System.out.println("There is no book for sale.");

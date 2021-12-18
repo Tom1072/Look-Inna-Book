@@ -14,11 +14,11 @@ public class JDBCController {
     private Connection connection;
     private Random random;
 
-    public JDBCController(String databaseName, String username, String password) {
+    public JDBCController(String port, String databaseName, String username, String password) {
         this.random = new Random(System.currentTimeMillis());
         try {
             // Please change the following 3 lines as needed
-            String url = String.format("jdbc:postgresql://localhost:5432/%s", databaseName);
+            String url = String.format("jdbc:postgresql://localhost:%s/%s", port, databaseName);
             this.connection = DriverManager.getConnection(url, username, password);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -372,6 +372,11 @@ public class JDBCController {
         return order;
     }
 
+    /**
+     * Get the Owner with the given name 
+     * @param name
+     * @return
+     */
     public Owner getOwner(String name) {
         Owner owner = null;
         
@@ -414,6 +419,10 @@ public class JDBCController {
         return ISBNs;
     }
 
+    /**
+     * Get the books that are currently not owned by anyone
+     * @return
+     */
     public ArrayList<Book> getFreeBooks() {
         ArrayList<Book> books = new ArrayList<>();
         String sql;
@@ -508,6 +517,14 @@ public class JDBCController {
         return publisher;
     }
 
+    /**
+     * Get the collection of a book with the given ISBN. The collection includes
+     *      Owner name
+     *      Sale information
+     *      Publisher revenue split information
+     * @param ISBN
+     * @return Collection object if suceed, null if failed
+     */
     public Collection getCollection(int ISBN) {
         PreparedStatement statement;
         ResultSet result;
@@ -582,6 +599,40 @@ public class JDBCController {
         return SUCCESS;
     }
 
+    /**
+     * Remove a book with given ISBN from the owner collection
+     * Afterward the book is free to be added to any other owner's collection
+     * @param ISBN
+     * @return 0 if suceed, > 0 otherwise
+     */
+    public int removeBookFromCollection(int ISBN) {
+        PreparedStatement statement;
+        String sql;
+
+        final int SUCCESS = 0;
+        final int DELETE_FROM_COLLECT_FAILED = 1;
+
+        try {
+            sql = "delete from Collect where ISBN=?;";
+            statement = connection.prepareStatement(sql);
+            statement.setInt(1, ISBN);
+            if (isGoodReturnCode(statement.executeUpdate())) {
+                return SUCCESS;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return DELETE_FROM_COLLECT_FAILED;
+    }
+
+    /**
+     * Email the publisher
+     * Order more books which belongs to the given collection for the given owner
+     * @param amountToOrder
+     * @param owner
+     * @param collection
+     * @return
+     */
     public int orderBookFromPublisher(int amountToOrder, Owner owner, Collection collection) {
         PreparedStatement statement;
         ResultSet result;
@@ -643,14 +694,16 @@ public class JDBCController {
     }
 
     private boolean isGoodReturnCodes(int[] returnCodes) {
-        boolean good = true;
         for (int i=0; i<returnCodes.length; i++) {
-            if (returnCodes[i] == 0) {
-                good = false;
-                break;
+            if (!isGoodReturnCode(returnCodes[i])) {
+                return false;
             }
         }
-        return good;
+        return true;
+    }
+
+    private boolean isGoodReturnCode(int returnCode) {
+        return returnCode > 0;
     }
 
 }
