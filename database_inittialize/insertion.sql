@@ -57,14 +57,14 @@ insert into Owner(name, bank_account, balance, email, phone_number) values ('Own
 delete from Collect;
 
 -- owner 1 collection
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (3, 'Owner1', 10, 0, 0, 0, 0, 0.4);
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (4, 'Owner1', 10, 0, 0, 0, 0, 0.5);
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (5, 'Owner1', 10, 0, 0, 0, 0, 0.1);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (3, 'Owner1', 100, 0, 0, 0, 0, 0.4);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (4, 'Owner1', 100, 0, 0, 0, 0, 0.5);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (5, 'Owner1', 100, 0, 0, 0, 0, 0.1);
 
 -- owner 2 collection
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (7, 'Owner2', 20, 0, 0, 0, 0, 0.1);
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (8, 'Owner2', 20, 0, 0, 0, 0, 0.3);
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (9, 'Owner2', 20, 0, 0, 0, 0, 0.2);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (7, 'Owner2', 100, 0, 0, 0, 0, 0.1);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (8, 'Owner2', 100, 0, 0, 0, 0, 0.3);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (9, 'Owner2', 100, 0, 0, 0, 0, 0.2);
 
 -- Customer
 delete from Customer;

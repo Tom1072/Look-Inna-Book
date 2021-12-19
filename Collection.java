@@ -25,26 +25,19 @@ public class Collection {
         return publisher_split*book.price;
     }
 
-    public String getRecord() {
+    public String showRecord() {
         String s = "";
-        s += String.format("\tUnit in stock: %d\n", this.unit_in_stock);
-        s += String.format("\tUnit sold: %d\n", this.unit_sold);
-        s += String.format("\tRevenue: $%f\n", this.revenue);
-        s += String.format("\tExpense: $%f\n", this.expense);
-        s += String.format("\tPublisher split ratio: %2.0f/%2.0f\n", this.publisher_split * 100, (1-this.publisher_split) * 100);
+        s += book.toString();
+        s += String.format("Unit in stock: %d\n", this.unit_in_stock);
+        s += String.format("Unit sold: %d\n", this.unit_sold);
+        s += String.format("Revenue: $%.2f\n", this.revenue);
+        s += String.format("Expense: $%.2f\n", this.expense);
+        s += String.format("Publisher split ratio: %2.0f/%2.0f\n", this.publisher_split * 100, (1-this.publisher_split) * 100);
         return s;
     }
 
-    public String toString() {
-        String s = "";
-        s += String.format("Book infomation:\n");
-        s += String.format("%s\n", this.book);
-        s += String.format("Publisher information:\n");
-        s += String.format("%s\n", this.publisher);
-        s += String.format("Records:\n");
-        s += String.format("%s\n", this.getRecord());
-        
-        return s;
+    public String showBook() {
+        return book.toString();
     }
     
 }

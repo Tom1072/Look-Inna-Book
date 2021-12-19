@@ -29,6 +29,36 @@ public class JDBCController {
     }
 
     /**
+     * Browse owned books for customer with filters
+     * This is a wrapper around browseBook()
+     * @param bookNames
+     * @param ISBNs
+     * @param authors
+     * @param genres
+     * @param publishers
+     * @return
+     */
+    public ArrayList<Book> customerBrowseBook(ArrayList<String> bookNames, ArrayList<Integer> ISBNs, ArrayList<String> authors, ArrayList<String> genres, ArrayList<String> publishers) {
+        String querry = "select distinct ISBN from Book natural join Author where ISBN in (select ISBN from Collect)";
+        return browseBook(querry, bookNames, ISBNs, authors, genres, publishers);
+    }
+
+    /**
+     * Browse books free books for owner with filters
+     * This is a wrapper around browseBook()
+     * @param bookNames
+     * @param ISBNs
+     * @param authors
+     * @param genres
+     * @param publishers
+     * @return
+     */
+    public ArrayList<Book> ownerBrowseBook(ArrayList<String> bookNames, ArrayList<Integer> ISBNs, ArrayList<String> authors, ArrayList<String> genres, ArrayList<String> publishers) {
+        String querry = "select distinct ISBN from Book natural join Author where ISBN not in (select ISBN from Collect)";
+        return browseBook(querry, bookNames, ISBNs, authors, genres, publishers);
+    }
+
+    /**
      * Browse books with filters
      * @param ISBNs
      * @param authors
@@ -36,11 +66,10 @@ public class JDBCController {
      * @param publishers
      * @return Books that are collected by any owner
      */
-    public ArrayList<Book> browseBook(ArrayList<String> bookNames, ArrayList<Integer> ISBNs, ArrayList<String> authors, ArrayList<String> genres, ArrayList<String> publishers) {
+    public ArrayList<Book> browseBook(String querry, ArrayList<String> bookNames, ArrayList<Integer> ISBNs, ArrayList<String> authors, ArrayList<String> genres, ArrayList<String> publishers) {
         ArrayList<Book> books = new ArrayList<>();
-        String sql;
+        String sql = new String(querry);
         try {
-            sql = "select ISBN from Book natural join Author where ISBN in (select ISBN from Collect)";
 
             if (bookNames.size() > 0) {
                 sql += String.format(" and book_name in (");
@@ -86,8 +115,8 @@ public class JDBCController {
                 sql = sql.substring(0, sql.length()-1);
                 sql += ")";
             }
-            sql += ";";
-            // System.out.println(sql);
+            sql += "order by ISBN;";
+            System.out.println(sql);
             PreparedStatement statement = connection.prepareStatement(sql);
             ResultSet result = statement.executeQuery();
             if (result.next()) {
@@ -113,6 +142,7 @@ public class JDBCController {
                 customer.name = result.getString("name");
                 customer.billing_address = result.getString("billing_address");
                 customer.shipping_address = result.getString("shipping_address");
+                customer.balance = result.getDouble("balance");
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -216,7 +246,7 @@ public class JDBCController {
                     return SELECT_TUPPLE_FAILED;
                 }
             }
-            // @TODO check if customer has sufficient fund
+
             sql = "select balance from Customer where name=?";
             statement = connection.prepareStatement(sql);
             statement.setString(1, customer.name);
@@ -308,9 +338,9 @@ public class JDBCController {
             }
 
             // Link the books ordered to the order
+            sql = "insert into OrderBook(ISBN, order_id, unit_ordered) values (?, ?, ?)";
+            statement = connection.prepareStatement(sql);
             for (BookOrder bookOrder:basket.bookOrders) {
-                sql = "insert into OrderBook(ISBN, order_id, unit_ordered) values (?, ?, ?)";
-                statement = connection.prepareStatement(sql);
                 statement.setInt(1, bookOrder.book.ISBN);
                 statement.setInt(2, order_id);
                 statement.setInt(3, bookOrder.unit_ordered);
@@ -374,6 +404,11 @@ public class JDBCController {
         return order_ids;
     }
 
+    /**
+     * Get the order with given order_id
+     * @param order_id
+     * @return
+     */
     public Order getOrder(int order_id) {
         Order order = null;
         PreparedStatement statement;
@@ -444,6 +479,7 @@ public class JDBCController {
                 owner.bank_account = result.getString("bank_account");
                 owner.email = result.getString("email");
                 owner.phone_number = result.getString("phone_number");
+                owner.balance = result.getDouble("balance");
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -552,31 +588,50 @@ public class JDBCController {
     }
 
     /**
+     * Get all books in an owner collection (no filter)
+     * This is a wrapper around getBooksInCollection
+     * @param owner
+     * @return
+     */
+    public ArrayList<Integer> getAllBooksInCollection(Owner owner) {
+        return getBooksInCollection(owner, new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>());
+    }
+
+    /**
+     * Get all collections with filter
+     * This is a wrapper around getBooksInCollection() and getCollection()
+     * @param owner
+     * @param genres
+     * @param authors
+     * @param publishers
+     * @return
+     */
+    public ArrayList<Collection> getCollections(Owner owner, ArrayList<String> genres, ArrayList<String> authors, ArrayList<String> publishers) {
+        ArrayList<Integer> ISBNs = getBooksInCollection(owner, genres, authors, publishers);
+        ArrayList<Collection> collections = new ArrayList<>();
+        for (Integer ISBN:ISBNs) {
+            collections.add(getCollection(ISBN));
+        }
+        return collections;
+    }
+
+    /**
      * Get the book ISBNs in the collection of an owner
      * @param owner
      * @return An ArrayList of Book ISBN that belongs to owner
      */
-    public ArrayList<Integer> getBooksInCollection(Owner owner) {
-        PreparedStatement statement;
-        ResultSet result;
-        String sql;
-        ArrayList<Integer> ISBNs = new ArrayList<>();
+    public ArrayList<Integer> getBooksInCollection(Owner owner, ArrayList<String> genres, ArrayList<String> authors, ArrayList<String> publishers) {
+        String querry;
+        ArrayList<Book> ownerBooks;
+        ArrayList<Integer> ownerBookISBNs = new ArrayList<>();
 
-        sql = "select ISBN from Collect where owner_name=? order by ISBN;";
+        querry = String.format("select distinct ISBN from (((Owner join Collect on Owner.name=Collect.owner_name) join Book using (ISBN)) join Author using (ISBN)) where Owner.name='%s'", owner.name);
 
-        try {
-            statement = connection.prepareStatement(sql);
-            statement.setString(1, owner.name);
-            result = statement.executeQuery();
-            if (result.next()) {
-                do {
-                    ISBNs.add(result.getInt("ISBN"));
-                } while (result.next());
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
+        ownerBooks = browseBook(querry, new ArrayList<String>(), new ArrayList<Integer>(), authors, genres, publishers);
+        for (Book book: ownerBooks) {
+            ownerBookISBNs.add(book.ISBN);
         }
-        return ISBNs;
+        return ownerBookISBNs;
     }
 
     /**
@@ -730,26 +785,29 @@ public class JDBCController {
     }
 
     /**
-     * Add the book with ISBN to the owner's collection
+     * Add the book with ISBN to the owner's collection and order MIN_BOOK_THRESHOLD books from owner
      * @param ISBN
      * @param owner
      * @return the returnCode, 0 for SUCCESS, FAILURE otherwise
      */
-    public int addBookToCollection(int ISBN, Owner owner, double publisher_split) {
+    public int addBookToCollection(int ISBN, Owner owner, double publisher_split, double price) {
         PreparedStatement statement;
         String sql;
         final int SUCCESS = 0;
         final int INSERT_INTO_COLLECT_FAILED = 1;
+        final int UPDATE_BOOK_PRICE_FAILED = 2;
+        final int ORDER_BOOK_FROM_PUBLISHER_FAILED = 3;
         int unit_in_stock = 0;
         int unit_sold = 0;
         double revenue = 0;
         double expense = 0;
         double profit = 0;
 
-        sql = "insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) ";
-        sql += "values (?, ?, ?, ?, ?, ?, ?, ?);";
 
         try {
+            // Add new book to collection
+            sql = "insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) ";
+            sql += "values (?, ?, ?, ?, ?, ?, ?, ?);";
             statement = connection.prepareStatement(sql);
             statement.setInt(1, ISBN);
             statement.setString(2, owner.name);
@@ -763,11 +821,26 @@ public class JDBCController {
                 return INSERT_INTO_COLLECT_FAILED;
             }
             
+            // Update the book price
+            sql = "update Book set price=? where ISBN=?";
+            statement = connection.prepareStatement(sql);
+            statement.setDouble(1, price);
+            statement.setInt(2, ISBN);
+            if (statement.executeUpdate() == 0) {
+                return UPDATE_BOOK_PRICE_FAILED;
+            }
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        return SUCCESS;
+        // Order a starting number of books from publisher
+        if (orderBookFromPublisher(AMOUNT_TO_ORDER, owner, getCollection(ISBN)) == SUCCESS) {
+            return SUCCESS;
+        } else {
+            return ORDER_BOOK_FROM_PUBLISHER_FAILED;
+        }
+
     }
 
     /**

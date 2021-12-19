@@ -29,19 +29,10 @@ public class BookOrder {
         String s = "";
         s += String.format("Unit order: %d\n", this.unit_ordered);
         s += String.format("Book info:\n");
+        s += String.format("    ISBN: %d\n", this.book.ISBN);
         s += String.format("    Name: %s\n", this.book.book_name);
-
-        s += String.format("    Author: ");
-        for (String author:this.book.authors) {
-            s += String.format("%s, ", author);
-        }
-        s = s.substring(0, s.length()-2); // Remove the last comma
-        s += "\n";
-
-        s += String.format("    Publisher: %s\n", this.book.publisher_name);
-        s += String.format("    Genre: %s\n", this.book.genre);
-        s += String.format("    Unit Price: $%f\n", this.book.price);
-        s += String.format("    Subtotal for this book: $%f\n", this.book.price * this.unit_ordered);
+        s += String.format("    Unit Price: $%.2f\n", this.book.price);
+        s += String.format("    Subtotal for this book: $%.2f\n", this.book.price * this.unit_ordered);
         return s;
     }
     

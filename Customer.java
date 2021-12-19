@@ -4,6 +4,7 @@ public class Customer {
     public String name;
     public String billing_address;
     public String shipping_address;
+    public Double balance;
     public ArrayList<Order> orders;
 
     public Customer() {
@@ -15,9 +16,10 @@ public class Customer {
 
     public String toString() {
         String s = "";
-        s += String.format("name: %s\n", this.name);
-        s += String.format("billing address: %s\n", this.billing_address);
-        s += String.format("shipping address: %s\n", this.shipping_address);
+        s += String.format("\tname: %s\n", this.name);
+        s += String.format("\tbilling address: %s\n", this.billing_address);
+        s += String.format("\tshipping address: %s\n", this.shipping_address);
+        s += String.format("\tbalance: $%.2f\n", this.balance);
         return s;
     }
 }
