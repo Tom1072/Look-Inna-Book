@@ -199,9 +199,16 @@ public class View {
     }
 
     public void showCollections(ArrayList<Collection> collections) {
+        double totalRevenue = 0;
+        double totalExpense = 0;
         for (Collection collection:collections) {
+            totalExpense += collection.expense;
+            totalRevenue += collection.revenue;
             System.out.println(collection.showRecord());
         }
+
+        System.out.printf("Total revenue: $%.2f\n", totalRevenue);
+        System.out.printf("Total expense: $%.2f\n", totalExpense);
     }
 
     public Double getDouble(double... bounds) {

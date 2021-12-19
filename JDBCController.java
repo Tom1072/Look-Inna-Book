@@ -772,7 +772,6 @@ public class JDBCController {
                 collection.unit_sold = result.getInt("unit_sold");
                 collection.revenue = result.getDouble("revenue");
                 collection.expense = result.getDouble("expense");
-                collection.profit = result.getDouble("profit");
                 collection.publisher_split = result.getDouble("publisher_split");
                 collection.book = getBook(ISBN);
                 collection.publisher = getPublisher(collection.book.publisher_name);
@@ -801,13 +800,12 @@ public class JDBCController {
         int unit_sold = 0;
         double revenue = 0;
         double expense = 0;
-        double profit = 0;
 
 
         try {
             // Add new book to collection
-            sql = "insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) ";
-            sql += "values (?, ?, ?, ?, ?, ?, ?, ?);";
+            sql = "insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, publisher_split) ";
+            sql += "values (?, ?, ?, ?, ?, ?, ?);";
             statement = connection.prepareStatement(sql);
             statement.setInt(1, ISBN);
             statement.setString(2, owner.name);
@@ -815,7 +813,6 @@ public class JDBCController {
             statement.setInt(4, unit_sold);
             statement.setDouble(5, revenue);
             statement.setDouble(6, expense);
-            statement.setDouble(7, profit);
             statement.setDouble(8, publisher_split);
             if (statement.executeUpdate() == 0) {
                 return INSERT_INTO_COLLECT_FAILED;
