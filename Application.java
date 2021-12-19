@@ -208,22 +208,33 @@ public class Application {
     }
 
     private void customerAddBook() {
+        ArrayList<Integer> ISBNs;
         Book book = null;
         int numOfBooks = -1;
+        boolean bookExist = false;
+
         do {
+            ISBNs = JDBC.getOwnedBookISBNs();
+            view.print("List of Book ISBNs tot add:\n");
+            for (Integer ISBN:ISBNs) {
+                view.print("%d\n", ISBN);
+            }
             view.print("What is the ISBN of the book that you want to order?\n");
             int ISBN = view.getInt();
-            book = JDBC.getCustomerBook(ISBN);
-            if (book == null) {
-                view.print("Unknown Book or Book not collected\n\n");
+            bookExist = ISBNs.contains(ISBN);
+
+            if (!bookExist) {
+                view.print("Unknown Book or Book not collected, please choose from the list above\n");
+            } else {
+                book = JDBC.getBook(ISBN);
             }
-        } while (book == null);
+        } while (!bookExist);
 
         do {
             view.print("How many do you want to order? (0 if you change your mind)\n");
             numOfBooks = view.getInt();
-            basket.add(book, numOfBooks);
         } while (numOfBooks < 0);
+        basket.add(book, numOfBooks);
     }
 
     private void customerRemoveBook() {
@@ -252,9 +263,135 @@ public class Application {
     }
 
     private void customerBrowseBook() {
-        ArrayList<Book> books = JDBC.getCustomerBooks();
-        view.showCustomerBrowseBookMenu();
-        view.customerBrowseBook(books);
+        ArrayList<String> availableBookNames = JDBC.getOwnedBookNames();
+        ArrayList<Integer> availableISBNs = JDBC.getOwnedBookISBNs();
+        ArrayList<String> availableAuthors = JDBC.getAuthors();
+        ArrayList<String> availableGenre = JDBC.getGenres();
+        ArrayList<String> availablePublisher = JDBC.getPublishers();
+
+        ArrayList<String> bookNameFilter = new ArrayList<>();
+        ArrayList<Integer> ISBNFilter = new ArrayList<>();
+        ArrayList<String> authorFilter = new ArrayList<>();
+        ArrayList<String> genreFilter = new ArrayList<>();
+        ArrayList<String> publisherFilter = new ArrayList<>();
+
+        ArrayList<Book> books;
+
+        int option;
+        int indexChoice;
+
+        final int SEARCH                    = 1;
+        final int ALL_FILTERS_SHOW          = 2;
+        final int ALL_FILTERS_CLEAR         = 3;
+        final int BOOK_NAME_FILTER_ADD      = 4;
+        final int ISBN_FILTER_ADD           = 5;
+        final int AUTHOR_FILTER_ADD         = 6;
+        final int GENRE_FILTER_ADD          = 7;
+        final int PUBLISHER_FILTER_ADD      = 8;
+        final int EXIT                      = 0;
+
+        do {
+            view.showCustomerBrowseBookMenu();
+            option = view.getInt();
+
+            switch (option) {
+                case SEARCH:
+                    books = JDBC.browseBook(bookNameFilter, ISBNFilter, authorFilter, genreFilter, publisherFilter);
+                    view.customerShowBooks(books);
+                    break;
+
+                case ALL_FILTERS_SHOW:
+                    view.print("Current Book Name Filter: %s\n", bookNameFilter.toString());
+                    view.print("Current ISBN Filter: %s\n", ISBNFilter.toString());
+                    view.print("Current Author Filter: %s\n", authorFilter.toString());
+                    view.print("Current Genre Filter: %s\n", genreFilter.toString());
+                    view.print("Current Publisher Filter: %s\n", publisherFilter.toString());
+                    break;
+
+                case ALL_FILTERS_CLEAR:
+                    bookNameFilter.clear();
+                    ISBNFilter.clear();
+                    authorFilter.clear();
+                    genreFilter.clear();
+                    publisherFilter.clear();
+                    view.print("All filters cleared\n");
+                    break;
+
+                case BOOK_NAME_FILTER_ADD:
+                    view.print("Available Book names:\n");
+                    for (int i=0; i<availableBookNames.size(); i++) {
+                        view.print("(%d) %s\n", i, availableBookNames.get(i));
+                    }
+                    view.print("Enter the index number (in the round bracket) to add to filter\n");
+                    indexChoice = view.getInt(0, availableBookNames.size() - 1);
+                    if (!bookNameFilter.contains(availableBookNames.get(indexChoice))) {
+                        bookNameFilter.add(availableBookNames.get(indexChoice));
+                    } else {
+                        view.print("Book with name %s already existed in the Book Name Filter\n", availableBookNames.get(indexChoice));
+                    }
+                    break;
+
+                case ISBN_FILTER_ADD:
+                    view.print("Available ISBNs:\n");
+                    for (int i=0; i<availableISBNs.size(); i++) {
+                        view.print("(%d) ISBN %d\n", i, availableISBNs.get(i));
+                    }
+                    view.print("Enter the index number (in the round bracket) to add to filter\n");
+                    indexChoice = view.getInt(0, availableISBNs.size() - 1);
+                    if (!ISBNFilter.contains(availableISBNs.get(indexChoice))) {
+                        ISBNFilter.add(availableISBNs.get(indexChoice));
+                    } else {
+                        view.print("ISBN %d already existed in the ISBN Filter\n", availableISBNs.get(indexChoice));
+                    }
+                    break;
+
+                case AUTHOR_FILTER_ADD:
+                    view.print("Available Authors:\n");
+                    for (int i=0; i<availableAuthors.size(); i++) {
+                        view.print("(%d) %s\n", i, availableAuthors.get(i));
+                    }
+                    view.print("Enter the index number (in the round bracket) to add to filter\n");
+                    indexChoice = view.getInt(0, availableAuthors.size() - 1);
+                    if (!authorFilter.contains(availableAuthors.get(indexChoice))) {
+                        authorFilter.add(availableAuthors.get(indexChoice));
+                    } else {
+                        view.print("Author %s already existed in the Author Filter\n", availableAuthors.get(indexChoice));
+                    }
+                    break;
+
+                case GENRE_FILTER_ADD:
+                    view.print("Available Genres:\n");
+                    for (int i=0; i<availableGenre.size(); i++) {
+                        view.print("(%d) %s\n", i, availableGenre.get(i));
+                    }
+                    view.print("Enter the index number (in the round bracket) to add to filter\n");
+                    indexChoice = view.getInt(0, availableGenre.size() - 1);
+                    if (!genreFilter.contains(availableGenre.get(indexChoice))) {
+                        genreFilter.add(availableGenre.get(indexChoice));
+                    } else {
+                        view.print("Genre %s already existed in the Genre Filter\n", availableGenre.get(indexChoice));
+                    }
+                    break;
+
+                case PUBLISHER_FILTER_ADD:
+                    view.print("Available Publishers:\n");
+                    for (int i=0; i<availablePublisher.size(); i++) {
+                        view.print("(%d) %s\n", i, availablePublisher.get(i));
+                    }
+                    view.print("Enter the index number (in the round bracket) to add to filter\n");
+                    indexChoice = view.getInt(0, availablePublisher.size() - 1);
+                    if (!publisherFilter.contains(availablePublisher.get(indexChoice))) {
+                        publisherFilter.add(availablePublisher.get(indexChoice));
+                    } else {
+                        view.print("Publisher with name %s already existed in the Publisher Filter\n", availablePublisher.get(indexChoice));
+                    }
+                    break;
+
+                default:
+                    break;
+
+            }
+        } while (option != EXIT);
     }
 
     private void customerShowBasket() {

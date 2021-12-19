@@ -66,18 +66,24 @@ public class View {
 
     public void showCustomerBrowseBookMenu() {
         String s = "";
-        s += "Adjust your filter to browse for book:\n";
-        s += "(1) Book name:\n";
-        s += "(2) Author name:\n";
-        s += "(3) Genre:\n";
-        s += "(4) Publisher:\n";
-        s += "(5) Number of pages:\n";
-        s += "(6) Price:\n";
-        s += ("7 Number of pages:\n");
+        s += "--------------------------------\n";
+        s += "      Customer Browse Book      \n";
+        s += "--------------------------------\n";
+        s += "Browse book menu\n";
+        s += "(1) Search with the current filter\n";
+        s += "(2) Show all filters\n";
+        s += "(3) Clear all filters\n";
+        s += "(4) Add to Book Name filter\n";
+        s += "(5) Add to ISBN filter\n";
+        s += "(6) Add to Author filter\n";
+        s += "(7) Add to Genre filter\n";
+        s += "(8) Add to Publisher filter\n";
+        s += "(0) Exit from browse book view\n";
+        s += "--------------------------------\n";
         System.out.println(s);
     }
 
-    public void customerBrowseBook(ArrayList<Book> books) {
+    public void customerShowBooks(ArrayList<Book> books) {
         if (books.size() == 0) {
             System.out.println("There is no book for sale.");
         } else {
@@ -138,10 +144,22 @@ public class View {
         }
     }
 
-    public int getInt() {
+    public int getInt(int... bounds) {
         System.out.print("Enter your choice: ");
-        int output = scanner.nextInt();
-        scanner.nextLine();
+        int output;
+        if (bounds.length == 2) {
+            do {
+                output = scanner.nextInt();
+                if (output < bounds[0] || output > bounds[1])
+                    System.out.print("Choice not within bound (%d, %d), please enter again: ");
+                else
+                    break;
+            } while (true);
+            scanner.nextLine();
+        } else {
+            output = scanner.nextInt();
+            scanner.nextLine();
+        }
         System.out.println();
         return output;
     }
