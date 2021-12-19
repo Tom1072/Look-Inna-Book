@@ -90,7 +90,7 @@ public class Basket {
         } else {
             s += "Your basket is empty\n";
         }
-        s += String.format("Your order total is: %f", total);
+        s += String.format("Your order total is: %.2f", total);
         return s;
     }
 }

@@ -53,16 +53,16 @@ public class Application {
         final int BROWSE_BOOK    = 1;
         final int ADD_BOOK       = 2;
         final int REMOVE_BOOK    = 3;
-        final int SHOW_BASKET    = 5;
+        final int SHOW_BASKET    = 4;
         final int EXIT           = 0;
 
         // Logged-out customer only
-        final int LOG_IN         = 9;
+        final int LOG_IN         = 5;
 
         // Logged-in customer only
-        final int TRACK_ORDERS   = 7;
-        final int CHECKOUT       = 8;
-        final int LOG_OUT        = 9;
+        final int TRACK_ORDERS   = 5;
+        final int CHECKOUT       = 6;
+        final int LOG_OUT        = 7;
 
         int option = 0;
 
@@ -178,6 +178,10 @@ public class Application {
         Order order;
 
         order_ids = JDBC.getCustomerOrders(customer);
+        if (order_ids.size() == 0) {
+            view.print("There's no order to track\n");
+            return;
+        }
 
         do {
             // Print the order IDs
@@ -215,18 +219,25 @@ public class Application {
 
         do {
             ISBNs = JDBC.getOwnedBookISBNs();
-            view.print("List of Book ISBNs tot add:\n");
+            view.print("List of Book ISBNs to add:\n");
             for (Integer ISBN:ISBNs) {
-                view.print("%d\n", ISBN);
+                Book b = JDBC.getBook(ISBN);
+                view.print("\tISBN: %d\n", ISBN);
+                view.print("\tname: %s\n", b.book_name);
+                view.print("\tprice per book: %.2f\n", b.price);
+                view.print("\n", ISBN);
             }
-            view.print("What is the ISBN of the book that you want to order?\n");
+            view.print("What is the ISBN of the book that you want to order? (0 to exit)\n");
             int ISBN = view.getInt();
             bookExist = ISBNs.contains(ISBN);
 
-            if (!bookExist) {
+            if (!bookExist && ISBN > 0) {
                 view.print("Unknown Book or Book not collected, please choose from the list above\n");
+            } else if (ISBN == 0) {
+                return;
             } else {
                 book = JDBC.getBook(ISBN);
+                break;
             }
         } while (!bookExist);
 
@@ -243,13 +254,18 @@ public class Application {
         boolean bookExists = false;
 
         do {
-            view.print("What is the ISBN of the book that you want to remove?\n");
+            view.customerShowBasket(basket);
+            view.print("What is the ISBN of the book that you want to remove? (0 to exit)\n");
             ISBN = view.getInt();
             bookExists = basket.exists(ISBN);
-            if (!bookExists) {
+            if (!bookExists && ISBN > 0) {
                 view.print("Book not in basket\n");
+            } else if (ISBN == 0) {
+                return;
+            } else {
+                break;
             }
-        } while (!bookExists);
+        } while (true);
 
         do {
             view.print("How many do you want to remove? (0 if you change your mind)\n");
@@ -263,6 +279,14 @@ public class Application {
     }
 
     private void customerBrowseBook() {
+        browseBook(true);
+    }
+
+    private void ownerBrowseBook() {
+        browseBook(false);
+    }
+
+    private void browseBook(boolean isCustomer) {
         ArrayList<String> availableBookNames = JDBC.getOwnedBookNames();
         ArrayList<Integer> availableISBNs = JDBC.getOwnedBookISBNs();
         ArrayList<String> availableAuthors = JDBC.getAuthors();
@@ -274,8 +298,6 @@ public class Application {
         ArrayList<String> authorFilter = new ArrayList<>();
         ArrayList<String> genreFilter = new ArrayList<>();
         ArrayList<String> publisherFilter = new ArrayList<>();
-
-        ArrayList<Book> books;
 
         int option;
         int indexChoice;
@@ -291,13 +313,15 @@ public class Application {
         final int EXIT                      = 0;
 
         do {
-            view.showCustomerBrowseBookMenu();
+            view.showBrowseBookMenu();
             option = view.getInt();
 
             switch (option) {
                 case SEARCH:
-                    books = JDBC.browseBook(bookNameFilter, ISBNFilter, authorFilter, genreFilter, publisherFilter);
-                    view.customerShowBooks(books);
+                    if (isCustomer)
+                        view.customerShowBooks(JDBC.customerBrowseBook(bookNameFilter, ISBNFilter, authorFilter, genreFilter, publisherFilter));
+                    else
+                        view.ownerShowBooks(JDBC.ownerBrowseBook(bookNameFilter, ISBNFilter, authorFilter, genreFilter, publisherFilter));
                     break;
 
                 case ALL_FILTERS_SHOW:
@@ -410,13 +434,14 @@ public class Application {
         final int EXIT                          = 0;
 
         // Logged-out owner only
-        final int LOG_IN                        = 9;
+        final int LOG_IN                        = 2;
 
         // Logged-in owner only
         final int ADD_BOOK                      = 2; 
         final int REMOVE_BOOK                   = 3;
         final int ORDER_BOOK                    = 4;
-        final int SHOW_COLLECTION_AND_RECORD    = 5;
+        final int SHOW_COLLECTION               = 5;
+        final int SHOW_RECORD                   = 6;
         final int LOG_OUT                       = 9;
 
         int option = 0;
@@ -434,6 +459,7 @@ public class Application {
                     default:
                         break;
                 }
+
             } else {
                 // Logged-in specific
                 view.showOwnerScreenLoggedIn(owner);
@@ -452,8 +478,11 @@ public class Application {
                     case ORDER_BOOK:
                         ownerOrderBook();
                         continue;
-                    case SHOW_COLLECTION_AND_RECORD:
-                        ownerShowCollectionAndRecord();
+                    case SHOW_COLLECTION:
+                        ownerShowCollection();
+                        continue;
+                    case SHOW_RECORD:
+                        ownerShowRecord();
                         continue;
                     default:
                         break;
@@ -462,7 +491,7 @@ public class Application {
 
             switch (option) {
                 case BROWSE_FREE_BOOK:
-                    ownerBrowseFreeBook();
+                    ownerBrowseBook();
                     break;
                 case EXIT:
                     ownerExit();
@@ -496,16 +525,11 @@ public class Application {
         }
     }
 
-    private void ownerBrowseFreeBook() {
-        ArrayList<Book> books = JDBC.getFreeBooks();
-        view.ownerBrowseFreeBook(books);
-    }
-
     private void ownerRemoveBook() {
         int returnCode;
         boolean bookExist;
         int bookToRemove = -1;
-        ArrayList<Integer> ISBNs = JDBC.getBooksInCollection(owner);
+        ArrayList<Integer> ISBNs = JDBC.getAllBooksInCollection(owner);
         
         final int SUCCESS = 0;
 
@@ -535,6 +559,7 @@ public class Application {
         ArrayList<Integer> freeISBNs = JDBC.getFreeBookISBNs();
         int returnCode;
         double publisher_split;
+        double price;
         final int SUCESS = 0;
 
         do {
@@ -552,12 +577,13 @@ public class Application {
             }
         } while (true);
 
-        do {
-            view.print("What percentage do you want to split the revenue with the Publisher? (enter an integer percentage from 0 to 100)\n");
-            publisher_split = (double)(view.getInt()) / (double)100;
-        } while (publisher_split < 0 || publisher_split > 1.0);
+        view.print("What price do you want to set for the book?\n");
+        price = view.getDouble(0, Double.MAX_VALUE);
 
-        returnCode = JDBC.addBookToCollection(bookToAdd, owner, publisher_split);
+        view.print("What percentage do you want to split the revenue with the Publisher? (enter a ratio from 0 to 1)\n");
+        publisher_split = view.getDouble(0, 1.0);
+
+        returnCode = JDBC.addBookToCollection(bookToAdd, owner, publisher_split, price);
         if (returnCode == SUCESS) {
             view.print("Book added to collection sucessfully\n");
         } else {
@@ -568,7 +594,7 @@ public class Application {
 
     private void ownerOrderBook() {
         boolean bookExist;
-        ArrayList<Integer> ISBNs = JDBC.getBooksInCollection(owner);
+        ArrayList<Integer> ISBNs = JDBC.getAllBooksInCollection(owner);
         int bookToOrder;
         int amountToOrder;
 
@@ -605,40 +631,116 @@ public class Application {
         }
     }
 
-    private void ownerShowCollectionAndRecord() {
-        boolean bookExist;
+    private void ownerShowCollection() {
         ArrayList<Integer> ISBNs;
-        int bookToShow;
+        ArrayList<String> genreFilter = new ArrayList<>();
+        ArrayList<String> authorFilter = new ArrayList<>();
+        ArrayList<String> publisherFilter = new ArrayList<>();
         Collection collection;
 
-        ISBNs = JDBC.getBooksInCollection(owner);
+        ISBNs = JDBC.getBooksInCollection(owner, genreFilter, authorFilter, publisherFilter);
+
+        for (Integer ISBN:ISBNs) {
+            // Get that book information
+            collection = JDBC.getCollection(ISBN);
+            if (collection != null) {
+                view.print("%s\n", collection.showBook());
+            } else {
+                view.print("Failed to get collection\n");
+            }
+        }
+    }
+
+    private void ownerShowRecord() {
+        int option;
+        int indexChoice;
+        ArrayList<String> availableAuthors = JDBC.getAuthors();
+        ArrayList<String> availableGenre = JDBC.getGenres();
+        ArrayList<String> availablePublisher = JDBC.getPublishers();
+        ArrayList<Collection> collections;
+
+        ArrayList<String> genreFilter = new ArrayList<>();
+        ArrayList<String> authorFilter = new ArrayList<>();
+        ArrayList<String> publisherFilter = new ArrayList<>();
+
+        final int SHOW_RECORDS          = 1;
+        final int SHOW_FILTERS          = 2;
+        final int CLEAR_FILTERS         = 3;
+        final int GENRE_FILTER_ADD      = 4;
+        final int AUTHOR_FILTER_ADD     = 5;
+        final int PUBLISHER_FILTER_ADD  = 6;
+        final int EXIT                  = 0;
 
         do {
-            // Print the ISBNs
-            view.print("ISBNs of books in the collection:\n");
-            for (Integer ISBN:ISBNs) {
-                view.print("\t%d\n", ISBN);
+            view.showOwnerRecordMenu();
+            option = view.getInt();
+
+            switch (option) {
+                case SHOW_RECORDS:
+                    collections = JDBC.getCollections(owner, genreFilter, authorFilter, publisherFilter);
+                    view.showCollections(collections);
+                    break;
+                case SHOW_FILTERS:
+                    view.print("Genre Filter: %s\n", genreFilter.toString());
+                    view.print("Author Filter: %s\n", authorFilter.toString());
+                    view.print("Publisher Filter: %s\n", publisherFilter.toString());
+                    break;
+                case CLEAR_FILTERS:
+                    genreFilter.clear();
+                    authorFilter.clear();
+                    publisherFilter.clear();
+                    view.print("All filter cleared\n");
+                    break;
+
+                case GENRE_FILTER_ADD:
+                    view.print("Available Genres:\n");
+                    for (int i=0; i<availableGenre.size(); i++) {
+                        view.print("(%d) %s\n", i, availableGenre.get(i));
+                    }
+                    view.print("Enter the index number (in the round bracket) to add to filter\n");
+                    indexChoice = view.getInt(0, availableGenre.size() - 1);
+                    if (!genreFilter.contains(availableGenre.get(indexChoice))) {
+                        genreFilter.add(availableGenre.get(indexChoice));
+                    } else {
+                        view.print("Genre %s already existed in the Genre Filter\n", availableGenre.get(indexChoice));
+                    }
+                    break;
+
+                case AUTHOR_FILTER_ADD:
+                    view.print("Available Authors:\n");
+                    for (int i=0; i<availableAuthors.size(); i++) {
+                        view.print("(%d) %s\n", i, availableAuthors.get(i));
+                    }
+                    view.print("Enter the index number (in the round bracket) to add to filter\n");
+                    indexChoice = view.getInt(0, availableAuthors.size() - 1);
+                    if (!authorFilter.contains(availableAuthors.get(indexChoice))) {
+                        authorFilter.add(availableAuthors.get(indexChoice));
+                    } else {
+                        view.print("Author %s already existed in the Author Filter\n", availableAuthors.get(indexChoice));
+                    }
+                    break;
+
+                case PUBLISHER_FILTER_ADD:
+                    view.print("Available Publishers:\n");
+                    for (int i=0; i<availablePublisher.size(); i++) {
+                        view.print("(%d) %s\n", i, availablePublisher.get(i));
+                    }
+                    view.print("Enter the index number (in the round bracket) to add to filter\n");
+                    indexChoice = view.getInt(0, availablePublisher.size() - 1);
+                    if (!publisherFilter.contains(availablePublisher.get(indexChoice))) {
+                        publisherFilter.add(availablePublisher.get(indexChoice));
+                    } else {
+                        view.print("Publisher with name %s already existed in the Publisher Filter\n", availablePublisher.get(indexChoice));
+                    }
+                    break;
+                case EXIT:
+                    return;
+                default:
+                    view.print("Unknown option\n");
+                    break;
             }
 
-            view.print("What book do you want to see more information about?\n");
-            bookToShow = view.getInt();
-
-            // Check if bookToShow is in the ISBNs list
-            bookExist = ISBNs.contains(bookToShow);
-            if (!bookExist) {
-                view.print("Unknown ISBN, please choose from the ISBN list above\n");
-            } else {
-                // Get that book information
-                collection = JDBC.getCollection(bookToShow);
-                if (collection != null) {
-                    view.print("Information about book with ISBN %d:\n", bookToShow);
-                    view.print("%s\n", collection);
-                } else {
-                    view.print("Failed to get collection\n");
-                }
-            }
-        } while (!bookExist);
-
+        } while (true);
     }
 
     private void ownerExit() {
