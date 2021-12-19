@@ -54,7 +54,6 @@ create table Collect(
     unit_sold           integer,
     revenue             real, -- unit_sold * book price
     expense             real, -- revenue * publisher_split
-    profit              real, -- revenue * owner_split
     publisher_split     real,
     primary key (ISBN),
     foreign key (ISBN) references Book(ISBN)

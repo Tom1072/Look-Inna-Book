@@ -7,20 +7,24 @@ insert into Publisher(name, email, bank_account, balance, address, phone_number)
 insert into Publisher(name, email, bank_account, balance, address, phone_number)
     values ('publisher2', 'publisher2@email.com', '0002', 500.25, '1st FGH Avenue, K1A 1X3', '613 123 6789');
 
--- Book
+-- Unowned Book --> No price yet, price only set when owner collects it
 delete from Book;
-insert into Book(ISBN, publisher_name, book_name, genre, description, num_of_pages, price)
-    values (1, 'publisher0', 'Book1', 'Genre1', 'Desciption1', 100, 10.0);
-insert into Book(ISBN, publisher_name, book_name, genre, description, num_of_pages, price)
-    values (2, 'publisher0', 'Book2', 'Genre1', 'Desciption2', 200, 11.0);
+insert into Book(ISBN, publisher_name, book_name, genre, description, num_of_pages)
+    values (1, 'publisher0', 'Book1', 'Genre1', 'Desciption1', 100);
+insert into Book(ISBN, publisher_name, book_name, genre, description, num_of_pages)
+    values (2, 'publisher0', 'Book2', 'Genre1', 'Desciption2', 200);
+insert into Book(ISBN, publisher_name, book_name, genre, description, num_of_pages)
+    values (6, 'publisher1', 'Book6', 'Genre2', 'Desciption6', 100);
+
+-- Owner1 Books
 insert into Book(ISBN, publisher_name, book_name, genre, description, num_of_pages, price)
     values (3, 'publisher0', 'Book3', 'Genre1', 'Desciption3', 150, 12.0);
 insert into Book(ISBN, publisher_name, book_name, genre, description, num_of_pages, price)
     values (4, 'publisher0', 'Book4', 'Genre1', 'Desciption4', 175, 15.0);
 insert into Book(ISBN, publisher_name, book_name, genre, description, num_of_pages, price)
     values (5, 'publisher0', 'Book5', 'Genre2', 'Desciption5', 250, 13.0);
-insert into Book(ISBN, publisher_name, book_name, genre, description, num_of_pages, price)
-    values (6, 'publisher1', 'Book6', 'Genre2', 'Desciption6', 100, 11.0);
+
+-- Owner2 Books
 insert into Book(ISBN, publisher_name, book_name, genre, description, num_of_pages, price)
     values (7, 'publisher1', 'Book7', 'Genre3', 'Desciption7', 600, 18.0);
 insert into Book(ISBN, publisher_name, book_name, genre, description, num_of_pages, price)
@@ -57,14 +61,14 @@ insert into Owner(name, bank_account, balance, email, phone_number) values ('Own
 delete from Collect;
 
 -- owner 1 collection
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (3, 'Owner1', 100, 0, 0, 0, 0, 0.4);
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (4, 'Owner1', 100, 0, 0, 0, 0, 0.5);
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (5, 'Owner1', 100, 0, 0, 0, 0, 0.1);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, publisher_split) values (3, 'Owner1', 300, 0, 0, 1440, 0.4);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, publisher_split) values (4, 'Owner1', 300, 0, 0, 2250, 0.5);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, publisher_split) values (5, 'Owner1', 300, 0, 0, 390, 0.1);
 
 -- owner 2 collection
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (7, 'Owner2', 100, 0, 0, 0, 0, 0.1);
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (8, 'Owner2', 100, 0, 0, 0, 0, 0.3);
-insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, profit, publisher_split) values (9, 'Owner2', 100, 0, 0, 0, 0, 0.2);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, publisher_split) values (7, 'Owner2', 300, 0, 0, 540, 0.1);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, publisher_split) values (8, 'Owner2', 300, 0, 0, 1800, 0.3);
+insert into Collect(ISBN, owner_name, unit_in_stock, unit_sold, revenue, expense, publisher_split) values (9, 'Owner2', 300, 0, 0, 2400, 0.2);
 
 -- Customer
 delete from Customer;

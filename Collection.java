@@ -5,7 +5,6 @@ public class Collection {
     public int unit_sold;
     public double revenue;
     public double expense;
-    public double profit;
     public double publisher_split;
     public Book book;
     public Publisher publisher;
@@ -15,7 +14,6 @@ public class Collection {
         this.unit_sold = -1;
         this.revenue = -1;
         this.expense = -1;
-        this.profit = -1;
         this.publisher_split = -1;
         this.book = null;
         this.publisher = null;
