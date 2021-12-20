@@ -15,7 +15,6 @@ public class Application {
     }
 
     /** Main Controllers */
-
     public void run() {
         final int EXIT           = 0;
         final int CUSTOMER       = 1;
@@ -47,7 +46,6 @@ public class Application {
     }
 
     /** Customer Controllers */
-
     private void customerControl() {
         // Common
         final int BROWSE_BOOK    = 1;
@@ -120,6 +118,10 @@ public class Application {
             }
         } while (option != EXIT);
     }
+
+    /**
+     * Login to a customer
+     */
     private void customerLogin() {
         if (customer == null) {
             view.print("Enter the name of the customer to log in:\n");
@@ -133,6 +135,9 @@ public class Application {
         }
     }
 
+    /**
+     * Logout of a customer
+     */
     private void customerLogout() {
         if (customer != null) {
             customer = null;
@@ -140,6 +145,9 @@ public class Application {
         }
     }
 
+    /**
+     * Check out a basket for a customer
+     */
     private void customerCheckOut() {
         String billingAddress = "";
         String shippingAddress = "";
@@ -172,6 +180,9 @@ public class Application {
         }
     }
 
+    /**
+     * Track a customer order
+     */
     private void customerTrackOrders() {
         ArrayList<Integer> order_ids;
         int orderToTrack;
@@ -212,6 +223,9 @@ public class Application {
         } while (trackAnother.equals("yes"));
     }
 
+    /**
+     * Add a book order to the basket
+     */
     private void customerAddBook() {
         ArrayList<Integer> ISBNs;
         Book book = null;
@@ -249,6 +263,9 @@ public class Application {
         basket.add(book, numOfBooks);
     }
 
+    /**
+     * Remove a book order from the basket
+     */
     private void customerRemoveBook() {
         int ISBN = -1;
         int numOfBooks = -1;
@@ -279,14 +296,387 @@ public class Application {
 
     }
 
+    /**
+     * Browse for customer books (books that are collected by an owner)
+     */
     private void customerBrowseBook() {
         browseBook(true);
     }
 
+    /**
+     * Show all book orders in the basket
+     */
+    private void customerShowBasket() {
+        view.customerShowBasket(basket);
+    }
+
+    /**
+     * Exit from customer view
+     */
+    private void customerExit() {
+        customerLogout();
+        view.print("Back to Main View\n");
+    }
+
+    /** Owner Controllers */
+    private void ownerControl() {
+        // Common
+        final int BROWSE_FREE_BOOK              = 1; // Browse only the books that isn't owned by any other owner
+        final int EXIT                          = 0;
+
+        // Logged-out owner only
+        final int LOG_IN                        = 2;
+
+        // Logged-in owner only
+        final int ADD_BOOK                      = 2; 
+        final int REMOVE_BOOK                   = 3;
+        final int ORDER_BOOK                    = 4;
+        final int SHOW_COLLECTION               = 5;
+        final int SHOW_RECORD                   = 6;
+        final int LOG_OUT                       = 9;
+
+        int option = 0;
+
+        do {
+            if (owner == null) {
+                // Not logged-in specific
+                view.showOwnerScreenNotLoggedIn();
+                option = view.getInt();
+
+                switch (option) {
+                    case LOG_IN:
+                        ownerLogin();
+                        continue;
+                    default:
+                        break;
+                }
+
+            } else {
+                // Logged-in specific
+                view.showOwnerScreenLoggedIn(owner);
+                option = view.getInt();
+
+                switch (option) {
+                    case LOG_OUT:
+                        ownerLogout();
+                        continue;
+                    case ADD_BOOK:
+                        ownerAddBook();
+                        continue;
+                    case REMOVE_BOOK:
+                        ownerRemoveBook();
+                        continue;
+                    case ORDER_BOOK:
+                        ownerOrderBook();
+                        continue;
+                    case SHOW_COLLECTION:
+                        ownerShowCollection();
+                        continue;
+                    case SHOW_RECORD:
+                        ownerShowRecord();
+                        continue;
+                    default:
+                        break;
+                }
+            }
+
+            switch (option) {
+                case BROWSE_FREE_BOOK:
+                    ownerBrowseBook();
+                    break;
+                case EXIT:
+                    ownerExit();
+                    break;
+                default:
+                    view.print("Unknown option\n");
+                    break;
+            }
+        } while (option != EXIT);
+
+    }
+
+    /**
+     * Browse for unowned books for owner to add to collection
+     */
     private void ownerBrowseBook() {
         browseBook(false);
     }
 
+    private void ownerLogin() {
+        if (owner == null) {
+            view.print("Enter the name of the owner to log in:\n");
+            String name = view.getString();
+            owner = JDBC.getOwner(name);
+            if (owner != null) {
+                view.print("Owner logged in successfully!\n");
+            } else {
+                view.print("Owner logged in unsuccessfully!\n");
+            }
+        }
+    }
+
+    /**
+     * Logout from an owner
+     */
+    private void ownerLogout() {
+        if (owner != null) {
+            owner = null;
+            view.print("Owner logged out successfully!\n");
+        }
+    }
+
+    /**
+     * Remove a book from an owner's collection
+     */
+    private void ownerRemoveBook() {
+        int returnCode;
+        boolean bookExist;
+        int bookToRemove = -1;
+        ArrayList<Integer> ISBNs = JDBC.getAllBooksInCollection(owner);
+        
+        final int SUCCESS = 0;
+
+        do {
+            view.print("Here are the ISBN of books that belong to your collection:\n");
+            for (Integer ISBN:ISBNs) {
+                view.print("\t%d\n", ISBN);
+            }
+            view.print("What is the ISBN of the book that you want to remove?\n");
+            bookToRemove = view.getInt();
+            bookExist = ISBNs.contains(bookToRemove);
+            if (!bookExist) {
+                view.print("Book not in your collection, please choose from the list above\n");
+            } else {
+                returnCode = JDBC.removeBookFromCollection(bookToRemove);
+                if (returnCode == SUCCESS) {
+                    view.print("Book removed from collection successfully\n");
+                } else {
+                    view.print("Failed to remove book from collection, returnCode = %d\n", returnCode);
+                }
+            }
+        } while (!bookExist);
+    }
+
+    /**
+     * Add a book to an owner collection and order a fixed about from the publisher
+     */
+    private void ownerAddBook() {
+        int bookToAdd;
+        ArrayList<Integer> freeISBNs = JDBC.getFreeBookISBNs();
+        int returnCode;
+        double publisher_split;
+        double price;
+        final int SUCESS = 0;
+
+        do {
+            view.print("Here are the uncollected book ISBNs to choose from:\n");
+            for (Integer ISBN:freeISBNs) {
+                view.print("\t%d\n", ISBN);
+            }
+            view.print("What is the ISBN of the book that you want to add to collection?\n");
+            bookToAdd = view.getInt();
+            if (!freeISBNs.contains(bookToAdd)) {
+                view.print("Book not found or already collected by other, please choose from the ISBN list above\n");
+                continue;
+            } else {
+                break;
+            }
+        } while (true);
+
+        view.print("What price do you want to set for the book?\n");
+        price = view.getDouble(0, Double.MAX_VALUE);
+
+        view.print("What percentage do you want to split the revenue with the Publisher? (enter a ratio from 0 to 1)\n");
+        publisher_split = view.getDouble(0, 1.0);
+
+        returnCode = JDBC.addBookToCollection(bookToAdd, owner, publisher_split, price);
+        if (returnCode == SUCESS) {
+            view.print("Book added to collection sucessfully\n");
+            owner = JDBC.getOwner(owner.name); // Update owner information (balance)
+        } else {
+            view.print("FATAL: Book cannot be added to collection, returnCode = %d\n", returnCode);
+        }
+
+    }
+
+    /**
+     * Order books from Publisher (only for this owner's collected book)
+     * Wrapper for ownerOrderBook(int, int)
+     */
+    private void ownerOrderBook() {
+        boolean bookExist;
+        ArrayList<Integer> ISBNs = JDBC.getAllBooksInCollection(owner);
+        int bookToOrder;
+        int amountToOrder;
+
+        do {
+            view.print("Here are the book ISBNs in your collection:\n");
+            for (Integer ISBN:ISBNs) {
+                view.print("\t%d\n", ISBN);
+            }
+
+            view.print("What do you want to order?\n");
+            bookToOrder = view.getInt();
+            bookExist = ISBNs.contains(bookToOrder);
+            if (!bookExist) {
+                view.print("Book not found or not in your collection, please enter the value listed\n");
+            } else {
+                view.print("How many you want to order?\n");
+                amountToOrder = view.getInt();
+                ownerOrderBook(amountToOrder, bookToOrder);
+            }
+        } while (!bookExist);
+
+    }
+
+    /**
+     * Order amountToOrder books of ISBN from the publisher
+     * @param amountToOrder
+     * @param ISBN
+     */
+    private void ownerOrderBook(int amountToOrder, int ISBN) {
+        int returnCode;
+        Collection collection = JDBC.getCollection(ISBN);
+        final int SUCCESS = 0;
+
+        returnCode = JDBC.orderBookFromPublisher(amountToOrder, owner, collection);
+        if (returnCode == SUCCESS) {
+            view.print("Sucessfully ordered %d books with ISBN %d from the publisher\n", amountToOrder, ISBN);
+        } else {
+            view.print("Failed to order book from publisher, returnCode = %d\n", returnCode);
+        }
+    }
+
+    /**
+     * Show a books in an owner's collection
+     */
+    private void ownerShowCollection() {
+        ArrayList<Integer> ISBNs;
+        ArrayList<String> genreFilter = new ArrayList<>();
+        ArrayList<String> authorFilter = new ArrayList<>();
+        ArrayList<String> publisherFilter = new ArrayList<>();
+        Collection collection;
+
+        ISBNs = JDBC.getBooksInCollection(owner, genreFilter, authorFilter, publisherFilter);
+
+        for (Integer ISBN:ISBNs) {
+            // Get that book information
+            collection = JDBC.getCollection(ISBN);
+            if (collection != null) {
+                view.print("%s\n", collection.showBook());
+            } else {
+                view.print("Failed to get collection\n");
+            }
+        }
+    }
+
+    /**
+     * Show sale record for an owner's collection
+     */
+    private void ownerShowRecord() {
+        int option;
+        int indexChoice;
+        ArrayList<String> availableAuthors = JDBC.getAuthors();
+        ArrayList<String> availableGenre = JDBC.getGenres();
+        ArrayList<String> availablePublisher = JDBC.getPublishers();
+        ArrayList<Collection> collections;
+
+        ArrayList<String> genreFilter = new ArrayList<>();
+        ArrayList<String> authorFilter = new ArrayList<>();
+        ArrayList<String> publisherFilter = new ArrayList<>();
+
+        final int SHOW_RECORDS          = 1;
+        final int SHOW_FILTERS          = 2;
+        final int CLEAR_FILTERS         = 3;
+        final int GENRE_FILTER_ADD      = 4;
+        final int AUTHOR_FILTER_ADD     = 5;
+        final int PUBLISHER_FILTER_ADD  = 6;
+        final int EXIT                  = 0;
+
+        do {
+            view.showOwnerRecordMenu();
+            option = view.getInt();
+
+            switch (option) {
+                case SHOW_RECORDS:
+                    collections = JDBC.getCollections(owner, genreFilter, authorFilter, publisherFilter);
+                    view.showCollections(collections);
+                    break;
+                case SHOW_FILTERS:
+                    view.print("Genre Filter: %s\n", genreFilter.toString());
+                    view.print("Author Filter: %s\n", authorFilter.toString());
+                    view.print("Publisher Filter: %s\n", publisherFilter.toString());
+                    break;
+                case CLEAR_FILTERS:
+                    genreFilter.clear();
+                    authorFilter.clear();
+                    publisherFilter.clear();
+                    view.print("All filter cleared\n");
+                    break;
+
+                case GENRE_FILTER_ADD:
+                    view.print("Available Genres:\n");
+                    for (int i=0; i<availableGenre.size(); i++) {
+                        view.print("(%d) %s\n", i, availableGenre.get(i));
+                    }
+                    view.print("Enter the index number (in the round bracket) to add to filter\n");
+                    indexChoice = view.getInt(0, availableGenre.size() - 1);
+                    if (!genreFilter.contains(availableGenre.get(indexChoice))) {
+                        genreFilter.add(availableGenre.get(indexChoice));
+                    } else {
+                        view.print("Genre %s already existed in the Genre Filter\n", availableGenre.get(indexChoice));
+                    }
+                    break;
+
+                case AUTHOR_FILTER_ADD:
+                    view.print("Available Authors:\n");
+                    for (int i=0; i<availableAuthors.size(); i++) {
+                        view.print("(%d) %s\n", i, availableAuthors.get(i));
+                    }
+                    view.print("Enter the index number (in the round bracket) to add to filter\n");
+                    indexChoice = view.getInt(0, availableAuthors.size() - 1);
+                    if (!authorFilter.contains(availableAuthors.get(indexChoice))) {
+                        authorFilter.add(availableAuthors.get(indexChoice));
+                    } else {
+                        view.print("Author %s already existed in the Author Filter\n", availableAuthors.get(indexChoice));
+                    }
+                    break;
+
+                case PUBLISHER_FILTER_ADD:
+                    view.print("Available Publishers:\n");
+                    for (int i=0; i<availablePublisher.size(); i++) {
+                        view.print("(%d) %s\n", i, availablePublisher.get(i));
+                    }
+                    view.print("Enter the index number (in the round bracket) to add to filter\n");
+                    indexChoice = view.getInt(0, availablePublisher.size() - 1);
+                    if (!publisherFilter.contains(availablePublisher.get(indexChoice))) {
+                        publisherFilter.add(availablePublisher.get(indexChoice));
+                    } else {
+                        view.print("Publisher with name %s already existed in the Publisher Filter\n", availablePublisher.get(indexChoice));
+                    }
+                    break;
+                case EXIT:
+                    return;
+                default:
+                    view.print("Unknown option\n");
+                    break;
+            }
+
+        } while (true);
+    }
+
+    /**
+     * Exit from owner view
+     */
+    private void ownerExit() {
+        ownerLogout();
+        view.print("Back to Main View\n");
+    }
+
+    /**
+     * Controller for browsing book for both Customer and Owner
+     * @param isCustomer
+     */
     private void browseBook(boolean isCustomer) {
         ArrayList<String> availableBookNames = JDBC.getOwnedBookNames();
         ArrayList<Integer> availableISBNs = JDBC.getOwnedBookISBNs();
@@ -417,337 +807,6 @@ public class Application {
 
             }
         } while (option != EXIT);
-    }
-
-    private void customerShowBasket() {
-        view.customerShowBasket(basket);
-    }
-
-    private void customerExit() {
-        customerLogout();
-        view.print("Back to Main View\n");
-    }
-
-    /** Owner Controllers */
-    private void ownerControl() {
-        // Common
-        final int BROWSE_FREE_BOOK              = 1; // Browse only the books that isn't owned by any other owner
-        final int EXIT                          = 0;
-
-        // Logged-out owner only
-        final int LOG_IN                        = 2;
-
-        // Logged-in owner only
-        final int ADD_BOOK                      = 2; 
-        final int REMOVE_BOOK                   = 3;
-        final int ORDER_BOOK                    = 4;
-        final int SHOW_COLLECTION               = 5;
-        final int SHOW_RECORD                   = 6;
-        final int LOG_OUT                       = 9;
-
-        int option = 0;
-
-        do {
-            if (owner == null) {
-                // Not logged-in specific
-                view.showOwnerScreenNotLoggedIn();
-                option = view.getInt();
-
-                switch (option) {
-                    case LOG_IN:
-                        ownerLogin();
-                        continue;
-                    default:
-                        break;
-                }
-
-            } else {
-                // Logged-in specific
-                view.showOwnerScreenLoggedIn(owner);
-                option = view.getInt();
-
-                switch (option) {
-                    case LOG_OUT:
-                        ownerLogout();
-                        continue;
-                    case ADD_BOOK:
-                        ownerAddBook();
-                        continue;
-                    case REMOVE_BOOK:
-                        ownerRemoveBook();
-                        continue;
-                    case ORDER_BOOK:
-                        ownerOrderBook();
-                        continue;
-                    case SHOW_COLLECTION:
-                        ownerShowCollection();
-                        continue;
-                    case SHOW_RECORD:
-                        ownerShowRecord();
-                        continue;
-                    default:
-                        break;
-                }
-            }
-
-            switch (option) {
-                case BROWSE_FREE_BOOK:
-                    ownerBrowseBook();
-                    break;
-                case EXIT:
-                    ownerExit();
-                    break;
-                default:
-                    view.print("Unknown option\n");
-                    break;
-            }
-        } while (option != EXIT);
-
-    }
-
-
-    private void ownerLogin() {
-        if (owner == null) {
-            view.print("Enter the name of the owner to log in:\n");
-            String name = view.getString();
-            owner = JDBC.getOwner(name);
-            if (owner != null) {
-                view.print("Owner logged in successfully!\n");
-            } else {
-                view.print("Owner logged in unsuccessfully!\n");
-            }
-        }
-    }
-
-    private void ownerLogout() {
-        if (owner != null) {
-            owner = null;
-            view.print("Owner logged out successfully!\n");
-        }
-    }
-
-    private void ownerRemoveBook() {
-        int returnCode;
-        boolean bookExist;
-        int bookToRemove = -1;
-        ArrayList<Integer> ISBNs = JDBC.getAllBooksInCollection(owner);
-        
-        final int SUCCESS = 0;
-
-        do {
-            view.print("Here are the ISBN of books that belong to your collection:\n");
-            for (Integer ISBN:ISBNs) {
-                view.print("\t%d\n", ISBN);
-            }
-            view.print("What is the ISBN of the book that you want to remove?\n");
-            bookToRemove = view.getInt();
-            bookExist = ISBNs.contains(bookToRemove);
-            if (!bookExist) {
-                view.print("Book not in your collection, please choose from the list above\n");
-            } else {
-                returnCode = JDBC.removeBookFromCollection(bookToRemove);
-                if (returnCode == SUCCESS) {
-                    view.print("Book removed from collection successfully\n");
-                } else {
-                    view.print("Failed to remove book from collection, returnCode = %d\n", returnCode);
-                }
-            }
-        } while (!bookExist);
-    }
-
-    private void ownerAddBook() {
-        int bookToAdd;
-        ArrayList<Integer> freeISBNs = JDBC.getFreeBookISBNs();
-        int returnCode;
-        double publisher_split;
-        double price;
-        final int SUCESS = 0;
-
-        do {
-            view.print("Here are the uncollected book ISBNs to choose from:\n");
-            for (Integer ISBN:freeISBNs) {
-                view.print("\t%d\n", ISBN);
-            }
-            view.print("What is the ISBN of the book that you want to add to collection?\n");
-            bookToAdd = view.getInt();
-            if (!freeISBNs.contains(bookToAdd)) {
-                view.print("Book not found or already collected by other, please choose from the ISBN list above\n");
-                continue;
-            } else {
-                break;
-            }
-        } while (true);
-
-        view.print("What price do you want to set for the book?\n");
-        price = view.getDouble(0, Double.MAX_VALUE);
-
-        view.print("What percentage do you want to split the revenue with the Publisher? (enter a ratio from 0 to 1)\n");
-        publisher_split = view.getDouble(0, 1.0);
-
-        returnCode = JDBC.addBookToCollection(bookToAdd, owner, publisher_split, price);
-        if (returnCode == SUCESS) {
-            view.print("Book added to collection sucessfully\n");
-            owner = JDBC.getOwner(owner.name); // Update owner information (balance)
-        } else {
-            view.print("FATAL: Book cannot be added to collection, returnCode = %d\n", returnCode);
-        }
-
-    }
-
-    private void ownerOrderBook() {
-        boolean bookExist;
-        ArrayList<Integer> ISBNs = JDBC.getAllBooksInCollection(owner);
-        int bookToOrder;
-        int amountToOrder;
-
-        do {
-            view.print("Here are the book ISBNs in your collection:\n");
-            for (Integer ISBN:ISBNs) {
-                view.print("\t%d\n", ISBN);
-            }
-
-            view.print("What do you want to order?\n");
-            bookToOrder = view.getInt();
-            bookExist = ISBNs.contains(bookToOrder);
-            if (!bookExist) {
-                view.print("Book not found or not in your collection, please enter the value listed\n");
-            } else {
-                view.print("How many you want to order?\n");
-                amountToOrder = view.getInt();
-                ownerOrderBook(amountToOrder, bookToOrder);
-            }
-        } while (!bookExist);
-
-    }
-
-    private void ownerOrderBook(int amountToOrder, int ISBN) {
-        int returnCode;
-        Collection collection = JDBC.getCollection(ISBN);
-        final int SUCCESS = 0;
-
-        returnCode = JDBC.orderBookFromPublisher(amountToOrder, owner, collection);
-        if (returnCode == SUCCESS) {
-            view.print("Sucessfully ordered %d books with ISBN %d from the publisher\n", amountToOrder, ISBN);
-        } else {
-            view.print("Failed to order book from publisher, returnCode = %d\n", returnCode);
-        }
-    }
-
-    private void ownerShowCollection() {
-        ArrayList<Integer> ISBNs;
-        ArrayList<String> genreFilter = new ArrayList<>();
-        ArrayList<String> authorFilter = new ArrayList<>();
-        ArrayList<String> publisherFilter = new ArrayList<>();
-        Collection collection;
-
-        ISBNs = JDBC.getBooksInCollection(owner, genreFilter, authorFilter, publisherFilter);
-
-        for (Integer ISBN:ISBNs) {
-            // Get that book information
-            collection = JDBC.getCollection(ISBN);
-            if (collection != null) {
-                view.print("%s\n", collection.showBook());
-            } else {
-                view.print("Failed to get collection\n");
-            }
-        }
-    }
-
-    private void ownerShowRecord() {
-        int option;
-        int indexChoice;
-        ArrayList<String> availableAuthors = JDBC.getAuthors();
-        ArrayList<String> availableGenre = JDBC.getGenres();
-        ArrayList<String> availablePublisher = JDBC.getPublishers();
-        ArrayList<Collection> collections;
-
-        ArrayList<String> genreFilter = new ArrayList<>();
-        ArrayList<String> authorFilter = new ArrayList<>();
-        ArrayList<String> publisherFilter = new ArrayList<>();
-
-        final int SHOW_RECORDS          = 1;
-        final int SHOW_FILTERS          = 2;
-        final int CLEAR_FILTERS         = 3;
-        final int GENRE_FILTER_ADD      = 4;
-        final int AUTHOR_FILTER_ADD     = 5;
-        final int PUBLISHER_FILTER_ADD  = 6;
-        final int EXIT                  = 0;
-
-        do {
-            view.showOwnerRecordMenu();
-            option = view.getInt();
-
-            switch (option) {
-                case SHOW_RECORDS:
-                    collections = JDBC.getCollections(owner, genreFilter, authorFilter, publisherFilter);
-                    view.showCollections(collections);
-                    break;
-                case SHOW_FILTERS:
-                    view.print("Genre Filter: %s\n", genreFilter.toString());
-                    view.print("Author Filter: %s\n", authorFilter.toString());
-                    view.print("Publisher Filter: %s\n", publisherFilter.toString());
-                    break;
-                case CLEAR_FILTERS:
-                    genreFilter.clear();
-                    authorFilter.clear();
-                    publisherFilter.clear();
-                    view.print("All filter cleared\n");
-                    break;
-
-                case GENRE_FILTER_ADD:
-                    view.print("Available Genres:\n");
-                    for (int i=0; i<availableGenre.size(); i++) {
-                        view.print("(%d) %s\n", i, availableGenre.get(i));
-                    }
-                    view.print("Enter the index number (in the round bracket) to add to filter\n");
-                    indexChoice = view.getInt(0, availableGenre.size() - 1);
-                    if (!genreFilter.contains(availableGenre.get(indexChoice))) {
-                        genreFilter.add(availableGenre.get(indexChoice));
-                    } else {
-                        view.print("Genre %s already existed in the Genre Filter\n", availableGenre.get(indexChoice));
-                    }
-                    break;
-
-                case AUTHOR_FILTER_ADD:
-                    view.print("Available Authors:\n");
-                    for (int i=0; i<availableAuthors.size(); i++) {
-                        view.print("(%d) %s\n", i, availableAuthors.get(i));
-                    }
-                    view.print("Enter the index number (in the round bracket) to add to filter\n");
-                    indexChoice = view.getInt(0, availableAuthors.size() - 1);
-                    if (!authorFilter.contains(availableAuthors.get(indexChoice))) {
-                        authorFilter.add(availableAuthors.get(indexChoice));
-                    } else {
-                        view.print("Author %s already existed in the Author Filter\n", availableAuthors.get(indexChoice));
-                    }
-                    break;
-
-                case PUBLISHER_FILTER_ADD:
-                    view.print("Available Publishers:\n");
-                    for (int i=0; i<availablePublisher.size(); i++) {
-                        view.print("(%d) %s\n", i, availablePublisher.get(i));
-                    }
-                    view.print("Enter the index number (in the round bracket) to add to filter\n");
-                    indexChoice = view.getInt(0, availablePublisher.size() - 1);
-                    if (!publisherFilter.contains(availablePublisher.get(indexChoice))) {
-                        publisherFilter.add(availablePublisher.get(indexChoice));
-                    } else {
-                        view.print("Publisher with name %s already existed in the Publisher Filter\n", availablePublisher.get(indexChoice));
-                    }
-                    break;
-                case EXIT:
-                    return;
-                default:
-                    view.print("Unknown option\n");
-                    break;
-            }
-
-        } while (true);
-    }
-
-    private void ownerExit() {
-        ownerLogout();
-        view.print("Back to Main View\n");
     }
 
 }

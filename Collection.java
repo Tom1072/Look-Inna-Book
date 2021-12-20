@@ -1,4 +1,7 @@
 public class Collection {
+    /**
+     * Store a book in an owner's Collection
+     */
     public int ISBN;
     public String owner_name;
     public int unit_in_stock;

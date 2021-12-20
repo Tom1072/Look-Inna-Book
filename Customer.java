@@ -1,6 +1,9 @@
 import java.util.ArrayList;
 
 public class Customer {
+    /**
+     * Store Customer information when logged in
+     */
     public String name;
     public String billing_address;
     public String shipping_address;

@@ -116,7 +116,7 @@ public class JDBCController {
                 sql += ")";
             }
             sql += "order by ISBN;";
-            System.out.println(sql);
+            System.out.printf("JDBC: %s\n", sql);
             PreparedStatement statement = connection.prepareStatement(sql);
             ResultSet result = statement.executeQuery();
             if (result.next()) {
@@ -130,6 +130,11 @@ public class JDBCController {
         return books;
     }
 
+    /**
+     * Find the customer with a given name
+     * @param name
+     * @return
+     */
     public Customer getCustomer(String name) {
         Customer customer = null;
         
@@ -152,8 +157,9 @@ public class JDBCController {
     }
 
     /**
+     * Find the Book with the given ISBN
      * @param ISBN
-     * @return The Book with ISBN
+     * @return
      */
     public Book getBook(int ISBN) {
         Book book = null;
@@ -369,15 +375,16 @@ public class JDBCController {
             if (collection.unit_in_stock < MIN_BOOK_THRESHOLD) {
                 Owner owner = getOwner(collection.owner_name);
                 orderBookFromPublisher(AMOUNT_TO_ORDER, owner, collection);
+                System.out.printf("JDBC: Automatically order %d books with ISBN %d for owner %s\n",
+                                AMOUNT_TO_ORDER, bookOrder.book.ISBN, owner.name);
             }
         }
-
     }
 
     /**
-     * 
+     * Find the Order IDs of a Customer
      * @param customer
-     * @return the order_ids of that customer
+     * @return
      */
     public ArrayList<Integer> getCustomerOrders(Customer customer) {
         PreparedStatement statement;
@@ -934,6 +941,11 @@ public class JDBCController {
         return SUCESSS;
     }
 
+    /**
+     * Check if all returnCodes are good or not
+     * @param returnCodes
+     * @return true if all return Codes are good, false otherwise
+     */
     private boolean isGoodReturnCodes(int[] returnCodes) {
         for (int i=0; i<returnCodes.length; i++) {
             if (!isGoodReturnCode(returnCodes[i])) {
@@ -943,6 +955,11 @@ public class JDBCController {
         return true;
     }
 
+    /**
+     * Check if the return code is good or not
+     * @param returnCode
+     * @return true if the return code is good, false otherwise
+     */
     private boolean isGoodReturnCode(int returnCode) {
         return returnCode > 0;
     }

@@ -1,4 +1,7 @@
 public class Owner {
+    /**
+     * Stores Owner information when logged in to an Owner
+     */
     public String name;
     public String bank_account;
     public String email;

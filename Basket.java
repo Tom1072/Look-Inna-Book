@@ -1,6 +1,9 @@
 import java.util.ArrayList;
 
 public class Basket {
+    /**
+     * Collection of book orders for Customer before checkout
+     */
     public ArrayList<BookOrder> bookOrders;
 
     public Basket() {
@@ -90,7 +93,7 @@ public class Basket {
         } else {
             s += "Your basket is empty\n";
         }
-        s += String.format("Your order total is: %.2f", total);
+        s += String.format("Your order total is: $%.2f", total);
         return s;
     }
 }

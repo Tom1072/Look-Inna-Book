@@ -1,4 +1,7 @@
 public class Order {
+    /**
+     * Store order information when tracking order for Customer
+     */
     public int order_id;
     public String billing_address;
     public String shipping_address;
