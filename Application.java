@@ -162,6 +162,7 @@ public class Application {
         if (returnCode == SUCCESS) {
             view.print("Order placed successful!\n");
             basket.clear();
+            customer = JDBC.getCustomer(customer.name); // Update customer information (balance)
         } else if (returnCode == INSUFFICIENT_STOCK) {
             view.print("Order is canceled because of insufficient stock!\n");
         } else if (returnCode == INSUFFICIENT_FUND) {
@@ -586,6 +587,7 @@ public class Application {
         returnCode = JDBC.addBookToCollection(bookToAdd, owner, publisher_split, price);
         if (returnCode == SUCESS) {
             view.print("Book added to collection sucessfully\n");
+            owner = JDBC.getOwner(owner.name); // Update owner information (balance)
         } else {
             view.print("FATAL: Book cannot be added to collection, returnCode = %d\n", returnCode);
         }

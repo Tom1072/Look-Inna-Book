@@ -813,7 +813,7 @@ public class JDBCController {
             statement.setInt(4, unit_sold);
             statement.setDouble(5, revenue);
             statement.setDouble(6, expense);
-            statement.setDouble(8, publisher_split);
+            statement.setDouble(7, publisher_split);
             if (statement.executeUpdate() == 0) {
                 return INSERT_INTO_COLLECT_FAILED;
             }
