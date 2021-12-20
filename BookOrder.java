@@ -1,4 +1,7 @@
 public class BookOrder {
+    /**
+     * Store a book order in a basket for Customer before checkout
+     */
     public Book book;
     public int unit_ordered;
 
@@ -19,10 +22,6 @@ public class BookOrder {
     public double getExpense() {
         return (this.getRevenue() * this.book.publisher_split);
 
-    }
-
-    public double getProfit() {
-        return (this.getRevenue() * (1 - this.book.publisher_split));
     }
 
     public String toString() {

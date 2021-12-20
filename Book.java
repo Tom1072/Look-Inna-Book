@@ -1,6 +1,9 @@
 import java.util.ArrayList;
 
 public class Book {
+    /**
+     * Store a book information
+     */
     public int ISBN;
     public String book_name;
     public String genre;

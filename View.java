@@ -2,6 +2,10 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 public class View {
+    /**
+     * Provides methods to interacts with user (Customer and Owner)
+     * through stdout and stdin
+     */
     private Scanner scanner;
 
     public View() {

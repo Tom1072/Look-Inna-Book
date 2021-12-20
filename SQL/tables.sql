@@ -103,5 +103,3 @@ create table CustomerOrder(
     foreign key (customer_name) references Customer(name)
         on delete cascade
 );
-
--- Triggers

@@ -1,4 +1,7 @@
 public class Publisher {
+    /**
+     * Store publisher information
+     */
     public String name;
     public String email;
     public String bank_account;
